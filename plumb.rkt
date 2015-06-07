@@ -3,6 +3,8 @@
          file/zip
          net/url
          json
+         racket/serialize
+         net/base64
          "util.rkt"
          "config.rkt"
          "debug.rkt"
@@ -10,14 +12,14 @@
 
 
 (define (create-temp-dir)
-  (make-directory* (build-path (conf-get 'tempdir) "sources"))
-  (conf-add 'temp-sources (build-path (conf-get 'tempdir) "sources")))
+  (make-directory* (build-path (conf-get 'temp-dir) "sources"))
+  (conf-add 'temp-sources (build-path (conf-get 'temp-dir) "sources")))
 
 (define (clear-temp-dir)
   ;; Remove the zipfile
-  (for ([file (directory-list (conf-get 'tempdir))])
+  (for ([file (directory-list (conf-get 'temp-dir))])
     (when (member (file-extension file) '("zip"))
-      (delete-file (build-path (conf-get 'tempdir) file))))
+      (delete-file (build-path (conf-get 'temp-dir) file))))
   
   ;; Remove temporary sources
   (for ([file (directory-list (conf-get 'temp-sources))])
@@ -32,56 +34,45 @@
                  (build-path (conf-get 'temp-sources)
                              file)))))
 
-(define (build-zipfile)
-  (conf-add 'zipfile (build-path (conf-get 'tempdir) "occ.zip"))
-  (zip-verbose true)
-  (parameterize ([current-directory (conf-get 'tempdir)])
-    (zip (extract-filename (conf-get 'zipfile))
-         (conf-get 'temp-sources)
-         ))
-  )
-   
 (define (build-request-package)
   (define req (make-hash))
   (for ([file (directory-list (conf-get 'temp-sources))])
     (when (occam-file? file)
       (debug 'BUILD "Packing up file: ~a" (extract-filename file))
       ;; Add the file to the list of files being shipped.
-      (hash-set! req 'files (cons (extract-filename file) (hash-ref req 'files empty)))
+      (hash-set! req "files" (cons (extract-filename file) (hash-ref req "files" empty)))
       ;; Load the file into the hash
-      (hash-set! req (string->symbol (extract-filename file)) (file->string (build-path (conf-get 'temp-sources) file)))
+      (hash-set! req (extract-filename file) (file->string (build-path (conf-get 'temp-sources) file)))
       ))
   
   ;; Add additional metadata
-  (hash-set! req 'main (conf-get 'source-file))
-  (hash-set! req 'os (~a (system-type))) 
+  (hash-set! req "main" (extract-filename (conf-get 'source-file)))
+  (hash-set! req "os" (~a (system-type))) 
+  ;; Send ALL the local config data.
+  (hash-set! req "client-config" (config))
   
   ;; Return the request hash
   req)
     
-(define (send-request req)
-  (debug 'SEND "Request: ~n~a~n" req)
-  (get-pure-port
-     (make-server-url (conf-get 'server) (conf-get 'port)
-                      "compile" 
-                      (->json64 req))))
-
 (define (post-request req)
   (debug 'POST "Request: ~n~a~n" req)
   (post-pure-port
      (make-server-url (conf-get 'server) (conf-get 'port)
                       "compile")
-     (string->bytes/utf-8 (->json64 req))))
+     ;;(string->bytes/utf-8 (->json64 req))
+     (base64-encode 
+      (string->bytes/utf-8
+       (~s (serialize req))))
+     ))
       
 (define (read-response resp)
-  (debug 'RAW (~a resp))
+  (debug 'RAW (format "~a" resp))
   (define decoded (b64-decode resp))
-  (debug 'DECODED (~a decoded))
-  (define parsed  (string->jsexpr decoded))
-  (debug 'RAM (~a (hash-ref parsed 'RAM)))
-  (if (= (hash-ref parsed 'code) CODE.OK)
-      (values true (hash-ref parsed 'hex))
-      (values false false)))
+  (debug 'DECODED (~s decoded))
+  ;;(define parsed  (string->jsexpr decoded))
+  (define parsed (deserialize (read (open-input-bytes decoded))))
+  (debug 'READRESPONSE (~s parsed))
+  parsed)
   
 (define (compile)
   
@@ -99,22 +90,36 @@
   ;; Flag the main file in the hash table.
   
   (debug 'COMPILE "Sending request.")
-  ;; Send it. Save the response... it's a download URL for the hex.
-  (define-values (success? hex-url)
+  
+  ;; Send it. Save the response... 
+  (define resp
     (let ()
       (define resp-port (post-request req))
-      (define resp (read-all resp-port))
+      (define r (read-all resp-port))
       (close-input-port resp-port)
-      (debug 'PLUMB "Server Response: ~a" resp)
-      (read-response resp)))
+      (read-response r)))
   
-  (debug 'COMPILE "Hex URL: ~a" hex-url)
-  ;; Pass the URL on to the next function.
-  hex-url
+  ;; We're done here. The next step is to handle the result of
+  ;; what the server has handed us.
+  (debug 'SERVERRESPONSE (~s resp))
+  resp
   )
 
+
+(define (flush-ports)
+  (flush-output (current-output-port))
+  (flush-output (current-error-port)))
+
+(define (driver)
+  (define resp (compile))
+  (flush-ports)
+  )
+
+  
 ;; Defaults
 (config-file "client.yaml")
+
+(define cmd-line-params (make-hash))
 
 (define plumb
   (command-line
@@ -127,9 +132,24 @@
                  "Choose the client YAML config."
                  (config-file c)]
    
+   [("--cpu") cpu
+              "Choose the cpu we're compiling for."
+              (hash-set! cmd-line-params 'cpu cpu)]
+   
+   [("--mhz") mhz
+              "Choose the target's speed in MHz."
+              (hash-set! cmd-line-params 'mhz mhz)]
+   
+   [("--board") board
+                "Choose the target board."
+                (hash-set! cmd-line-params 'board board)]
+   
    #:args (file) ;; No command-line args
    (set-textual-debug)
    (load-config)
+   
+   (for ([(k v) cmd-line-params])
+     (conf-add k v))
    
    (debug 'PLUMB "Server is at http://~a:~a/" 
           (conf-get 'server)
@@ -139,5 +159,5 @@
    (conf-add 'source-path (extract-filedir (path->complete-path file)))
    (conf-add 'source-file file)
    
-   (compile)
+   (driver)
    ))

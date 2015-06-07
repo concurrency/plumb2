@@ -2,6 +2,7 @@
 (require web-server/http
          net/base64
          json
+         racket/serialize
          "debug.rkt"
          "util.rkt")
 
@@ -13,6 +14,9 @@
     (jsexpr->string o))))
 
 (define (encode-response json )
-  (response/xexpr (->json64 json)))
+  (response/xexpr 
+   (bytes->string/utf-8
+    (b64-encode 
+     (~s (serialize json))))))
 
 (define CODE.OK 200)

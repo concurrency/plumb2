@@ -10,6 +10,17 @@
 
 (provide (all-defined-out))
 
+;; CONTRACT :: (list-of any) any -> (list-of any)
+;; Intersperses the object 'o' throughout the list.
+(define (list-intersperse ls o)
+  (cond
+    [(empty? ls) ls]
+    [(empty? (rest ls)) ls]
+    [else
+     (cons (first ls)
+           (cons o 
+                 (list-intersperse (rest ls) o)))]))
+
 (define (extract-filename path)
   (define-values (base name dir?) (split-path path))
   (->string name))
@@ -33,17 +44,6 @@
        (third m)]
       [else "EXTENSIONERROR"])))
 
-;; CONTRACT :: (list-of any) any -> (list-of any)
-;; Intersperses the object 'o' throughout the list.
-(define (list-intersperse ls o)
-  (cond
-    [(empty? ls) ls]
-    [(empty? (rest ls)) ls]
-    [else
-     (cons (first ls)
-           (cons o 
-                 (list-intersperse (rest ls) o)))]))
-
 ;; CONTRACT :: any -> string
 ;; Converts any object to a string.
 ;; Potentially in an ugly way.
@@ -51,9 +51,9 @@
   (format "~a" o))
 
 (define (b64-decode str)
-  (~a (base64-decode 
-       (string->bytes/locale
-        (regexp-replace* #px"_" (~a str) "/")))))
+  (base64-decode 
+   (string->bytes/locale
+    (regexp-replace* #px"_" (~a str) "/"))))
 
 (define (b64-encode str)
   (regexp-replace* #px"/"
@@ -101,3 +101,30 @@
            [the-url (string->url url-str)])
       (debug 'MAKE-SERVER-URL "url: ~a~n" url-str)
       the-url)))
+
+(define words
+  '(judd moldy neck overobject nonthreatening
+         pedatilobate plasmolytic antihierarchal axiomatical bighead
+         cloisterlike churlish swage tweezers tableaux
+         telegnostic unintercepted	universalizer radiobroadcast prejudice
+         preinjurious protagonist danger dermatic dejecta
+         deluxe enterprise scarier siren skewness
+         sleekit soutine struggle sumptuous fried
+         gallerylike gent gliomatous hetaira island
+         resignal unhemmed realign transfiguration lavada gritter icao
+         unreserved thomisid cranebill unevil manue savorer prosuffrage sollar kuvaszok
+         evagination whistling crimean evoked salugi interpaving annuitant homonym 
+         hoidenish bassenthwaite lavatory outrung subpeduncled amalgamative cofunction 
+         splore drawbar anapaest unsquirming overpartiality unfevered loopy marbles 
+         viosterol antilepton superhet aleyard adoptively prelabelled baccy parodistically 
+         tammy satirisation wettability haole reinterrupt climacterical immediatist 
+         ostiole consecrator kazakstan perceivedness effeminate ramee transcendentalist
+         checkrail hersh heelless facility carcass changchowfu nettle cornstarch
+         ))
+
+(define (make-id n)
+  (define ls '())
+  (for ([n (range n)])
+    (set! ls (cons (~a (list-ref words (random (length words))))
+                   ls)))
+  (apply string-append (list-intersperse ls "-")))

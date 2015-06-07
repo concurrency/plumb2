@@ -1,2 +1,5 @@
 server: 127.0.0.1
 port: 9000
+temp-dir: /tmp/plumb/compile
+include: /usr/local/kroc-avr/include
+occbuild: /usr/local/kroc-avr/bin/avr-occbuild

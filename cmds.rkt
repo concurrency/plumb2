@@ -49,12 +49,12 @@
      
 
 (define (compile session-dir cmd)
-  (parameterize ([current-directory (build-path (conf-get 'temp-dir) session-dir)])
+  (parameterize ([current-directory (build-path (conf-get "temp-dir") session-dir)])
     (unless (directory-exists? (current-directory))
       (make-directory* (current-directory)))
     
     (debug 'COMPILE "Current directory: ~a~n" (current-directory))
-    (debug 'COMPILE "****~n~a~n****~n" cmd)
+    (debug 'COMPILE "~n****~n~a~n****~n" cmd)
            
     (let-values ([(stdout stdin pid stderr control)
                   (apply values (process cmd))])
@@ -78,17 +78,21 @@
              'ERROR
              )]))
       
-      (result))))
+      (debug 'COMPILERESULT (~a (result)))
+      (result)
+      )))
     
 ;; NEED TO PARAMETERIZE
 #|
  avr-occbuild --program fastblink.occ 
 --search /home/jupiter/git/kroc/tvm/arduino/occam/include/ 
 --search /home/jupiter/git/kroc/tvm/arduino/occam/include/arch/common/ 
---search /home/jupiter/git/kroc/tvm/arduino/occam/include/arch/m328p/ -D F.CPU=16000 
+--search /home/jupiter/git/kroc/tvm/arduino/occam/include/arch/m328p/  
 --search /home/jupiter/git/kroc/tvm/arduino/occam/include/platforms/arduino
+-D F.CPU=16000000
 |#
 
+;; FIXME : check the defaults in the hash-gets...
 (define (compile-cmd config main)
   (system-call
    (conf-get "occbuild")
@@ -96,7 +100,8 @@
               --search 
               ,(build-path (conf-get "include") "arch" "common")
               --search 
-              ,(build-path (conf-get "include") "arch" (hash-ref config "cpu" "m328"))
+              ,(build-path (conf-get "include") "arch" 
+                           (hash-ref config "cpu" "m328p"))
               --search 
               ,(build-path (conf-get "include") "platforms" 
                            (hash-ref config "platform" "arduino"))

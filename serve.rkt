@@ -22,15 +22,18 @@
 
 #lang racket
 (require web-server/dispatch 
-         ;; web-server/http
+         web-server/http
          web-server/servlet-env
          yaml
-         ;; net/base64
+         racket/serialize
+         net/base64
          ;; json
          ;; racket/date
          "debug.rkt"
          "config.rkt"
          "encoding.rkt"
+         "util.rkt"
+         "cmds.rkt"
          )
 
 (define (ping req)
@@ -38,20 +41,43 @@
   (encode-response #hash((pong . "Hello"))
                    ))
 
-(define (compile req)
-  (define json 'foo)
-  (debug 'COMPILE "~a" json)
+(define compile-counter
+  (let ([c 0])
+    (λ ()
+      (set! c (add1 c))
+      c)))
+
+(define (compile-driver req)
+  ;; Clean up the request
+  (define b64 (request-post-data/raw req))
+  (debug 'RAW (~s b64))
+  (define decoded (base64-decode b64))
+  (debug 'DECODED (~s decoded))
+  (define parsed
+    (deserialize 
+     (read (open-input-string 
+            (bytes->string/utf-8 decoded)))))
+  (debug 'PARSED (~s parsed))
+  
+  (define response (make-hash))
   ;; Part of my debugging exploration...
   ;; It seems collecting garbage keeps useage down. Racket probably
   ;; does a collection as needed, so this isn't strictly necessary.
   ;; 1000 sequential requests and no apparent file/memory leaks.
-  (define ram (current-memory-use))
   (collect-garbage)
-  (define h (make-hash `((status . "OK")
-                         (code . 200)
-                         (hex . "http://jadud.com/images/edit-compile-no-run-2.png")
-                         (RAM . ,ram))))
-  (define resp (encode-response h))
+ 
+  (hash-set! response "RAM" (current-memory-use))
+  (hash-set! response "seq" (compile-counter))
+  (hash-set! response "start" (current-milliseconds))
+  (hash-set! response "session-id" (make-id 4))
+  ;; Compile the file.
+
+  (define result
+    (compile (hash-ref response "session-id") 
+             (compile-cmd parsed (hash-ref parsed "main"))))
+  (hash-set! response "result" (~s result))
+  
+  (define resp (encode-response response))
   (debug 'COMPILE "Encoded Response:~n~a~n" resp)
   resp
   )
@@ -60,7 +86,7 @@
 (define-values (dispatch blog-url)
   (dispatch-rules
    [("ping") ping]
-   [("compile") #:method "post" compile]
+   [("compile") #:method "post" compile-driver]
    
    #|
    [("log" (string-arg) (string-arg)) 'client-log]
