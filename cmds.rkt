@@ -58,14 +58,14 @@
            
     (let-values ([(stdout stdin pid stderr control)
                   (apply values (process cmd))])
-      (define result (make-parameter 'UNKNOWN))
+      (define result (make-hash))
       
       (let loop ([status (control 'status)])
         (case status
           [(running) (sleep 1) (loop (control 'status))]
           [(done-ok) 
            ;; FIXME Some kind of response
-           'OK
+           (hash-set! result "code" 200)
            ]
           [(done-error)
            (let ([err-msg (read-all stdout)]
@@ -75,11 +75,13 @@
              (close-output-port stdin)
              (control 'kill)
              ;; FIXME Build an error response
-             'ERROR
+             (hash-set! result "err-msg" err-msg)
+             (hash-set! result "details" details)
+             (hash-set! result "code" 500)
              )]))
       
-      (debug 'COMPILERESULT (~a (result)))
-      (result)
+      (debug 'COMPILERESULT (~a result))
+      result
       )))
     
 ;; NEED TO PARAMETERIZE
