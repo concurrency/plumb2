@@ -10,8 +10,9 @@
 (define (->json64 o)
   (bytes->string/utf-8
    (b64-encode
-    (jsexpr->string (format "~a" o)))))
+    (jsexpr->string o))))
 
-(define (encode-response json #:success? [success? true])
-  (response/xexpr #:code (if success? 200 400)
-                  (->json64 json)))
+(define (encode-response json )
+  (response/xexpr (->json64 json)))
+
+(define CODE.OK 200)

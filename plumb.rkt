@@ -2,6 +2,7 @@
 (require yaml
          file/zip
          net/url
+         json
          "util.rkt"
          "config.rkt"
          "debug.rkt"
@@ -44,16 +45,44 @@
   (define req (make-hash))
   (for ([file (directory-list (conf-get 'temp-sources))])
     (when (occam-file? file)
+      (debug 'BUILD "Packing up file: ~a" (extract-filename file))
       ;; Add the file to the list of files being shipped.
-      (hash-set! req 'files (cons file
-                                      (hash-ref req 'files empty)))
+      (hash-set! req 'files (cons (extract-filename file) (hash-ref req 'files empty)))
       ;; Load the file into the hash
-      (hash-set! req file (file->string (build-path (conf-get 'temp-sources)
-                                                        file)))
+      (hash-set! req (string->symbol (extract-filename file)) (file->string (build-path (conf-get 'temp-sources) file)))
       ))
+  
+  ;; Add additional metadata
+  (hash-set! req 'main (conf-get 'source-file))
+  (hash-set! req 'os (~a (system-type))) 
+  
+  ;; Return the request hash
   req)
+    
+(define (send-request req)
+  (debug 'SEND "Request: ~n~a~n" req)
+  (get-pure-port
+     (make-server-url (conf-get 'server) (conf-get 'port)
+                      "compile" 
+                      (->json64 req))))
+
+(define (post-request req)
+  (debug 'POST "Request: ~n~a~n" req)
+  (post-pure-port
+     (make-server-url (conf-get 'server) (conf-get 'port)
+                      "compile")
+     (string->bytes/utf-8 (->json64 req))))
       
-      
+(define (read-response resp)
+  (debug 'RAW (~a resp))
+  (define decoded (b64-decode resp))
+  (debug 'DECODED (~a decoded))
+  (define parsed  (string->jsexpr decoded))
+  (debug 'RAM (~a (hash-ref parsed 'RAM)))
+  (if (= (hash-ref parsed 'code) CODE.OK)
+      (values true (hash-ref parsed 'hex))
+      (values false false)))
+  
 (define (compile)
   
  ;; Create a temp directory
@@ -68,21 +97,20 @@
   ;; Build the hash
   (define req (build-request-package))
   ;; Flag the main file in the hash table.
-  (hash-set! req 'main (conf-get 'source-file))
   
-  ;; Send it.
-  (get-pure-port
-     (make-server-url 
-      (conf-get 'server)
-      (conf-get 'port)
-      "compile" 
-      (->json64 req)))
+  (debug 'COMPILE "Sending request.")
+  ;; Send it. Save the response... it's a download URL for the hex.
+  (define-values (success? hex-url)
+    (let ()
+      (define resp-port (post-request req))
+      (define resp (read-all resp-port))
+      (close-input-port resp-port)
+      (debug 'PLUMB "Server Response: ~a" resp)
+      (read-response resp)))
   
-  ;; B64 it.
-  ;; Send the hash, with encoded zip and main file, to the server.
-  ;; Get back the hex.
-  ;; Store it for upload.
-  'done
+  (debug 'COMPILE "Hex URL: ~a" hex-url)
+  ;; Pass the URL on to the next function.
+  hex-url
   )
 
 ;; Defaults

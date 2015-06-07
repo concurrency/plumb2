@@ -38,16 +38,29 @@
   (encode-response #hash((pong . "Hello"))
                    ))
 
-(define (compile req json)
+(define (compile req)
+  (define json 'foo)
   (debug 'COMPILE "~a" json)
-  (encode-response #hash((status . "OK")
-                         (code . 200)))
+  ;; Part of my debugging exploration...
+  ;; It seems collecting garbage keeps useage down. Racket probably
+  ;; does a collection as needed, so this isn't strictly necessary.
+  ;; 1000 sequential requests and no apparent file/memory leaks.
+  (define ram (current-memory-use))
+  (collect-garbage)
+  (define h (make-hash `((status . "OK")
+                         (code . 200)
+                         (hex . "http://jadud.com/images/edit-compile-no-run-2.png")
+                         (RAM . ,ram))))
+  (define resp (encode-response h))
+  (debug 'COMPILE "Encoded Response:~n~a~n" resp)
+  resp
   )
+
 
 (define-values (dispatch blog-url)
   (dispatch-rules
    [("ping") ping]
-   [("compile" (string-arg)) compile]
+   [("compile") #:method "post" compile]
    
    #|
    [("log" (string-arg) (string-arg)) 'client-log]
@@ -75,6 +88,8 @@
                     (build-path (current-directory) "static"))
                    #:servlet-path "/"
                    #:servlet-regexp #rx""
+                   ;; Will this help with leaks?
+                   #:stateless? true
                    )))
 
 ;; Defaults
