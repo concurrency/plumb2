@@ -33,7 +33,7 @@
          "config.rkt"
          "encoding.rkt"
          "util.rkt"
-         "cmds.rkt"
+         (prefix-in cmds: "cmds.rkt")
          )
 
 (define (ping req)
@@ -57,6 +57,12 @@
     (deserialize 
      (read (open-input-string 
             (bytes->string/utf-8 decoded)))))
+  
+  ;; Copy so it is mutable
+  (define conf (make-hash))
+  (for ([(k v) parsed])
+    (hash-set! conf k v))
+  
   (debug 'PARSED (~s parsed))
   
   (define response (make-hash))
@@ -66,19 +72,30 @@
   ;; 1000 sequential requests and no apparent file/memory leaks.
   (collect-garbage)
  
-  (hash-set! response "RAM" (current-memory-use))
-  (hash-set! response "seq" (compile-counter))
-  (hash-set! response "start" (current-milliseconds))
-  (hash-set! response "session-id" (make-id 4))
-  ;; Compile the file.
-
-  (define result
-    (compile (hash-ref response "session-id") 
-             (compile-cmd parsed (hash-ref parsed "main"))))
-  (hash-set! response "result" (~s result))
+  (hash-set! conf "RAM" (current-memory-use))
+  (hash-set! conf "seq" (compile-counter))
+  (hash-set! conf "start" (current-milliseconds))
+  (hash-set! conf "session-id" (make-id 4))
   
-  (define resp (encode-response response))
-  (debug 'COMPILE "Encoded Response:~n~a~n" resp)
+  ;; Compile the file.
+  (define compile-result (cmds:compile conf))
+
+  (define resp false)
+
+  (cond
+    [(equal? (hash-ref compile-result "code") 200)
+     ;; Link the file
+     (define link-result (cmds:plink conf))
+     
+     ;; Binhex the file.
+     (define binhex-result (cmds:binhex conf))
+     
+     (hash-set! conf "end" (current-milliseconds))
+     (hash-set! conf "result" (~s compile-result))
+     (set! resp (encode-response conf))
+     ]
+    [else
+     (set! resp (encode-response compile-result))])
   resp
   )
 

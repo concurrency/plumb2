@@ -48,10 +48,22 @@
 
      
 
-(define (compile session-dir cmd)
+(define (compile conf)
+  (define cmd (compile-cmd conf (hash-ref conf "main")))
+  (define session-dir (hash-ref conf "session-id"))
+  
   (parameterize ([current-directory (build-path (conf-get "temp-dir") session-dir)])
+    
+    ;; Give us a place to put everything.
     (unless (directory-exists? (current-directory))
       (make-directory* (current-directory)))
+    
+    ;; Dump all the files in the configuration
+    (for ([file (hash-ref conf "files")])
+      (with-output-to-file
+          (build-path (current-directory) file)
+        (λ ()
+          (printf "~a" (hash-ref conf file)))))
     
     (debug 'COMPILE "Current directory: ~a~n" (current-directory))
     (debug 'COMPILE "~n****~n~a~n****~n" cmd)
@@ -74,10 +86,14 @@
              (close-input-port stderr)
              (close-output-port stdin)
              (control 'kill)
-             ;; FIXME Build an error response
+             ;; Build an error response
              (hash-set! result "err-msg" err-msg)
              (hash-set! result "details" details)
              (hash-set! result "code" 500)
+             
+             ;; Clean up the temporary space.
+             (debug 'DELETE "Deleting ~a" session-dir)
+             ;; (delete-directory/files (build-path (conf-get "temp-dir") session-dir))
              )]))
       
       (debug 'COMPILERESULT (~a result))
@@ -99,62 +115,61 @@
   (system-call
    (conf-get "occbuild")
    `(--search ,(conf-get "include")
-              --search 
-              ,(build-path (conf-get "include") "arch" "common")
-              --search 
-              ,(build-path (conf-get "include") "arch" 
-                           (hash-ref config "cpu" "m328p"))
-              --search 
-              ,(build-path (conf-get "include") "platforms" 
-                           (hash-ref config "platform" "arduino"))
-              -D ,(format "F.CPU=~a" (hash-ref config 'mhz "16000000"))
-              ;; --program needs to come last
-              --program ,main)))
+     ,@(map (λ (lib)
+              `(--search ,(build-path (conf-get "include") lib)))
+            '("convert" "forall" "hostio" "hostsp" "maths" "streamio" "string")) 
+     --search ,(build-path (conf-get "include") "plumbing")
+     --search 
+     ,(build-path (conf-get "include") 
+                  "plumbing" "arch" "common")
+     --search 
+     ,(build-path (conf-get "include") 
+                  "plumbing" "arch" 
+                  (hash-ref config "cpu" "m328p"))
+     --search 
+     ,(build-path (conf-get "include") 
+                  "plumbing" "platforms" 
+                  (hash-ref config "platform" "arduino"))
+     -D ,(format "F.CPU=~a" (hash-ref config 'mhz "16000000"))
+     ;; --program needs to come last
+     --program ,main)))
 
 (define (output-exists? session-dir names ext)
   (parameterize ([current-directory (build-path (conf-get 'temp-dir) session-dir)])
     (file-exists? (hash-ref names ext))))
 
-(define (plink config session-id names)
-  (define result 
-    (make-parameter 
-     (exe-in-session 
-      config
-      session-id 
-      (plinker-cmd config 
-                   (hash-ref names 'tce)
-                   (hash-ref names 'tbc)))))
-
+(define (plink conf)
+  (define result (exe-in-session conf (plinker-cmd conf)))
   (cond
-    [(zero? (result)) 
+    [(zero? result) 
      ;; FIXME Some kind of response
      'OK
      ]
     [else (error)]))
   
 
-(define (plinker-cmd config tce tbc)
+(define (plinker-cmd conf)
+  (define tbc (regexp-replace "occ$" (extract-filename (hash-ref conf "main")) "tbc"))
+  (define tce (regexp-replace "occ$" (extract-filename (hash-ref conf "main")) "tce"))
   (system-call
-   (send (config) get-config 'LINKER)
+   (conf-get 'linker)
    `(-s -o ,tbc
-        ,(->string ((send (config) get-config 'occam-lib-path) 'forall))
+        ,(->string (build-path (conf-get "include") "forall" "forall.lib"))
         ,tce)))
 
-(define (binhex config session-id names)
-  (define result
-    (make-parameter
-     (exe-in-session config session-id (binhex-cmd config names))))
+(define (binhex conf)
+  (define result (exe-in-session conf (binhex-cmd conf)))
   (cond
-    [(zero? (result)) 
+    [(zero? result) 
      ;;FIXME Some kind of response
      'OK
      ]
     [else (error)]))
 
 ;;FIXME : Magic Number (bytecode location)
-(define (binhex-cmd config names)
+(define (binhex-cmd conf)
   (system-call
-   (send (config) get-config 'BINHEX)
+   (conf-get 'binhex)
    `(,(number->string (hash-ref (send (config) get-config 'BOARD) 'start-address) 16)
      ,(hash-ref names 'tbc) 
      ,(hash-ref names 'hex))))
