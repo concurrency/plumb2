@@ -24,6 +24,7 @@
 
 (require "config.rkt"
          "util.rkt"
+         "debug.rkt"
          )
 (provide system-call
          exe-in-tempdir
@@ -38,15 +39,19 @@
     (system/exit-code cmd)))    
 
 ;; Server side... FIXME
-(define (exe-in-session id cmd)
-  (parameterize ([current-directory (conf-get 'session-dir)])
+(define (exe-in-session conf cmd)
+  (parameterize ([current-directory 
+                  (build-path (conf-get "temp-dir")
+                              (hash-ref conf "session-id"))])
     (system/exit-code cmd)))
 
 (define (system-call prog flags)
-  (format "~a ~a"
-          ;(build-bin-path prog)
-          prog
-          (render (parse flags))))
+  (define call (format "~a ~a"
+                       ;(build-bin-path prog)
+                       prog
+                       (render (parse flags))))
+  (debug 'SYSCALL call)
+  call)
 
 
 (struct cmd (app args) #:transparent)
