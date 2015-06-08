@@ -10,6 +10,10 @@
 
 (provide (all-defined-out))
 
+(define (flush-ports)
+  (flush-output (current-output-port))
+  (flush-output (current-error-port)))
+
 ;; CONTRACT :: (list-of any) any -> (list-of any)
 ;; Intersperses the object 'o' throughout the list.
 (define (list-intersperse ls o)
@@ -79,6 +83,7 @@
     content))
 
 (define (read-url str)
+  (debug 'READURL "Reading all from: ~a~n" str)
   (read-all (get-pure-port 
              (string->url str)
              (list "User-Agent: PLT Racket/5.3.3 (Plumb)"))))
@@ -88,6 +93,27 @@
     (set! str (regexp-replace pat str "")))
   str)
 
+(define (snoc ls o)
+  (reverse (cons o (reverse ls))))
+
+(define (->sym v)
+  (string->symbol (format "~a" v)))
+
+
+(define (safe-url-fetch reader #:default [default-message ""] url-string )
+  (debug 'SUF "Fetching URL-STRING ~a" url-string)
+  (let ([result ""])
+    (with-handlers ([exn? (λ (e)
+                            (debug 'SUF "Can't fetch ~a" url-string)
+                            (debug 'SUF "exn: ~a~n" e)
+                            (set! result default-message))])
+      (set! result (reader (get-pure-port 
+                            (cond
+                              [(string? url-string) 
+                               (string->url url-string)]
+                              [else url-string]))))
+      (debug 'SUF "result: ~a" result)
+      result)))
 
 (define make-server-url 
   (λ args

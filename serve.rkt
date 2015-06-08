@@ -24,15 +24,17 @@
 (require web-server/dispatch 
          web-server/http
          web-server/servlet-env
-         yaml
          racket/serialize
          net/base64
+         web-server/dispatchers/dispatch
+         racket/runtime-path
          ;; json
          ;; racket/date
          "debug.rkt"
          "config.rkt"
          "encoding.rkt"
          "util.rkt"
+         "constants.rkt"
          (prefix-in cmds: "cmds.rkt")
          )
 
@@ -78,51 +80,59 @@
   (hash-set! conf "session-id" (make-id 4))
   
   ;; Compile the file.
-  (define compile-result (cmds:compile conf))
-
   (define resp false)
-
-  (cond
-    [(equal? (hash-ref compile-result "code") 200)
-     ;; Link the file
-     (define link-result (cmds:plink conf))
-     
-     ;; Binhex the file.
-     (define binhex-result (cmds:binhex conf))
-    
-     ;; Merge it with a firmware
-     (define merge-result (cmds:ihexmerge conf))
-     
-     (hash-set! conf "end" (current-milliseconds))
-     (hash-set! conf "result" (~s compile-result))
-     
-     (hash-set! conf "hex" (hash-ref merge-result "hex"))
-     
-     (set! resp (encode-response conf))
-     
-    
-     ]
-    [else
-     (set! resp (encode-response compile-result))])
+  (define STATE 'compile)
+  
+  (let loop ([STATE 'compile]
+             [result false])
+    (case STATE
+      [(compile)
+       (define res (cmds:compile conf))
+       (if (equal? (hash-ref res "code") OK.COMPILE)
+           (loop 'link res)
+           (loop 'error res))]
+      [(link)
+       (define res (cmds:plink conf))
+       (if (equal? (hash-ref res "code") OK.LINK)
+           (loop 'binhex res)
+           (loop 'error res))]
+      [(binhex)
+       (define res (cmds:binhex conf))
+       (if (equal? (hash-ref res "code") OK.BINHEX)
+           (loop 'ihexmerge res)
+           (loop 'error res))]
+      [(ihexmerge)
+       (define res (cmds:ihexmerge conf))
+       (if (equal? (hash-ref res "code") OK.IHEXMERGE)
+           (loop 'done res)
+           (loop 'error res))]
+      [(done)
+       (hash-set! conf "end" (current-milliseconds))
+       (hash-set! conf "result" (~s result))
+       (hash-set! conf "hex" (hash-ref result "hex"))
+       (set! resp (encode-response conf))]
+      [(error)
+       (set! resp (encode-response result))]))
+  
+  ;; Return the response
   resp
   )
 
+(define (get-version req)
+  (encode-response (conf-get "version")))
 
 (define-values (dispatch blog-url)
   (dispatch-rules
    [("ping") ping]
    [("compile") #:method "post" compile-driver]
-   
-   #|
-   [("log" (string-arg) (string-arg)) 'client-log]
-   [("start-session") 'return-session-id]
-   [("add-file" (string-arg)) 'add-file]
-   [("compile" (string-arg) (string-arg) (string-arg)) 'guarded-compile-session]
-   ;; Need guards and session ID checks on retrieve.
-   [("board" (string-arg)) 'retrieve-board-config]
-   [("firmware" (string-arg)) 'retrieve-firmware]
-|#   
+   [("version") get-version]
+   ;; This is necessary to serve static files, I think.
+   [else (next-dispatcher)]
    ))
+
+
+(define-runtime-path ide (build-path "ide"))
+(define-runtime-path here (build-path "."))
 
 (define (serve)
   (with-handlers ([exn:fail? 
@@ -133,15 +143,14 @@
                    #:launch-browser? false
                    #:port (conf-get 'port)
                    #:listen-ip (conf-get 'server)
-                   #:server-root-path (current-directory)
-                   #:extra-files-paths 
-                   (list 
-                    (build-path (current-directory) "static"))
+                   ;;#:server-root-path (current-directory)
+                   #:extra-files-paths (list here ide "htdocs")
                    #:servlet-path "/"
                    #:servlet-regexp #rx""
                    ;; Will this help with leaks?
                    #:stateless? true
-                   )))
+                   )
+    ))
 
 ;; Defaults
 (config-file "server.yaml")

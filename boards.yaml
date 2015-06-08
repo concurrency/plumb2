@@ -2,7 +2,7 @@
   params:
     programmer: "arduino"
     baud: 57600
-    mcpu: "m328p"
+    mcpu: "atmega328p"
     F_CPU: 16000000
     # #x4F00 in occam
     start-address: "4F00"
@@ -11,7 +11,7 @@
   params:
     programmer: "arduino"
     baud: 57600
-    mcpu: "m328p"
+    mcpu: "atmega328p"
     F_CPU: 8000000
     start-address: "4F00"
     firmware: "tvm-avr-atmega328p-8000000-arduinopro.hex"
@@ -19,7 +19,7 @@
   params:
     programmer: "arduino"
     baud: 115200
-    mcpu: "m328p"
+    mcpu: "atmega328p"
     F_CPU: 8000000
     start-address: "4F00"
     firmware: "tvm-avr-atmega328p-16000000-arduinouno-0624.hex"

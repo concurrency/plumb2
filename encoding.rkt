@@ -18,5 +18,3 @@
    (bytes->string/utf-8
     (b64-encode 
      (~s (serialize json))))))
-
-(define CODE.OK 200)
