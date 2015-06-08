@@ -112,7 +112,13 @@
 
 (define (driver)
   (define resp (compile))
+  (define outp (open-output-file "firmware.hex" #:exists 'replace))
+  (fprintf outp (hash-ref resp "hex"))
+  (close-output-port outp)
   (flush-ports)
+  ;; Last step:
+  ;; Config does not seem to be essential...
+  ;; avrdude -C /usr/share/arduino/hardware/tools/avrdude.conf -V -F -P /dev/ttyUSB0 -p m328p -b 57600 -c arduino -U flash:w:firmware.hex:i
   )
 
   

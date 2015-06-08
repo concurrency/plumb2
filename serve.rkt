@@ -95,7 +95,8 @@
      
      (hash-set! conf "end" (current-milliseconds))
      (hash-set! conf "result" (~s compile-result))
-     (hash-set! conf "merge" merge-result)
+     
+     (hash-set! conf "hex" (hash-ref merge-result "hex"))
      
      (set! resp (encode-response conf))
      
