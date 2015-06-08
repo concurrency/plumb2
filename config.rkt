@@ -8,6 +8,7 @@
 (define config (make-parameter false))
 
 (define (conf-add key value)
+  (debug 'ADD (format "~a <- ~a" key value))
   (hash-set! (config) (format "~a" key) value))
 
 (define (conf-get key)

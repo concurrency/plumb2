@@ -30,11 +30,10 @@
          binhex
          output-exists?
          exe-in-session 
-         compile-cmd
          compile
          plink
-         plinker-cmd
-         binhex-cmd)
+         ihexmerge
+         )
 
 ;; RUNNING COMMANDS
 ;; We'll define commands as S-expressions. The language
@@ -148,11 +147,14 @@
     [else (error)]))
   
 
+(define (replace-extension file orig new)
+  (regexp-replace (format "~a$" orig) (extract-filename file) new))
+
 (define (plinker-cmd conf)
-  (define tbc (regexp-replace "occ$" (extract-filename (hash-ref conf "main")) "tbc"))
-  (define tce (regexp-replace "occ$" (extract-filename (hash-ref conf "main")) "tce"))
+  (define tbc (replace-extension (hash-ref conf "main") "occ" "tbc"))
+  (define tce (replace-extension (hash-ref conf "main") "occ" "tce"))
   (system-call
-   (conf-get 'linker)
+   (conf-get "linker")
    `(-s -o ,tbc
         ,(->string (build-path (conf-get "include") "forall" "forall.lib"))
         ,tce)))
@@ -168,8 +170,63 @@
 
 ;;FIXME : Magic Number (bytecode location)
 (define (binhex-cmd conf)
+  (define tbc (replace-extension (hash-ref conf "main") "occ" "tbc"))
+  (define hex (replace-extension (hash-ref conf "main") "occ" "hex"))
   (system-call
-   (conf-get 'binhex)
-   `(,(number->string (hash-ref (send (config) get-config 'BOARD) 'start-address) 16)
-     ,(hash-ref names 'tbc) 
-     ,(hash-ref names 'hex))))
+   (conf-get "binhex")
+   `(,(format "0x~a" (hash-ref (hash-ref (hash-ref conf "client-config") "board") "start-address"))
+     ,tbc
+     ,hex)))
+
+(define (ihexmerge conf)
+  (define result (ihexmerge-cmd conf))
+  result)
+
+(define (ihexmerge-cmd conf)
+  (parameterize ([current-directory (build-path (conf-get "temp-dir") 
+                                                (hash-ref conf "session-id"))])
+    (define tvm (build-path
+               (conf-get "install")
+               "firmwares"
+               (hash-ref (hash-ref (hash-ref conf "client-config") "board") "firmware")))
+  (define hex 
+    (replace-extension (hash-ref conf "main") "occ" "hex"))
+ 
+  (define cmd
+    (system-call
+     (conf-get "ihexmerge")
+     `(,tvm
+       ,hex)))
+  
+  (define result (make-hash))
+  
+  (let-values ([(stdout stdin pid stderr control)
+                (apply values (process cmd))])
+    (let loop ([status (control 'status)])
+        (case status
+          [(running) (sleep 1) (loop (control 'status))]
+          [(done-ok) 
+           (let ([hex (read-all stdout)])
+             (close-input-port stdout)
+             (close-input-port stderr)
+             (close-output-port stdin)
+             (control 'kill)
+             ;; Build an error response
+             (hash-set! result "hex" hex)
+             (hash-set! result "code" 200)
+             
+             ;; Clean up the temporary space.
+             ;;(debug 'DELETE "Deleting ~a" session-dir)
+             ;; (delete-directory/files (build-path (conf-get "temp-dir") session-dir))
+             )
+           ]
+          [(done-error)
+           (close-input-port stdout)
+           (close-input-port stderr)
+           (close-output-port stdin)
+           (control 'kill)
+           
+           (hash-set! result "code" 600)
+           ])))
+  result))
+

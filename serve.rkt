@@ -89,10 +89,17 @@
      
      ;; Binhex the file.
      (define binhex-result (cmds:binhex conf))
+    
+     ;; Merge it with a firmware
+     (define merge-result (cmds:ihexmerge conf))
      
      (hash-set! conf "end" (current-milliseconds))
      (hash-set! conf "result" (~s compile-result))
+     (hash-set! conf "merge" merge-result)
+     
      (set! resp (encode-response conf))
+     
+    
      ]
     [else
      (set! resp (encode-response compile-result))])

@@ -121,6 +121,21 @@
 
 (define cmd-line-params (make-hash))
 
+(define board-string
+  (let ()
+    (define boards (file->yaml "boards.yaml"))
+    (map (λ (b) (hash-ref b "name")) boards)))
+
+(define (get-board b)
+  (define boards (file->yaml "boards.yaml"))
+  (define result false)
+  (for ([brd boards])
+    (when (equal? b (hash-ref brd "name"))
+      (set! result (hash-ref brd "params"))))
+  result)
+
+(set-textual-debug)
+
 (define plumb
   (command-line
    #:program "plumb"
@@ -131,7 +146,7 @@
    [("--config") c
                  "Choose the client YAML config."
                  (config-file c)]
-   
+   #|
    [("--cpu") cpu
               "Choose the cpu we're compiling for."
               (hash-set! cmd-line-params 'cpu cpu)]
@@ -139,13 +154,20 @@
    [("--mhz") mhz
               "Choose the target's speed in MHz."
               (hash-set! cmd-line-params 'mhz mhz)]
-   
+   |#
    [("--board") board
-                "Choose the target board."
-                (hash-set! cmd-line-params 'board board)]
+                ("Choose the target board."
+                 "Allowed options: "
+                 (apply string-append
+                        (map (λ (b) (format "\t* ~a~n" b)) board-string)))
+                
+                (define board-params (get-board board))
+                (debug 'BOARDPARAMS (~s board-params))
+                (hash-set! cmd-line-params "board" board-params)
+                ]
    
    #:args (file) ;; No command-line args
-   (set-textual-debug)
+   
    (load-config)
    
    (for ([(k v) cmd-line-params])

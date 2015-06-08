@@ -1,6 +1,7 @@
 server: 0.0.0.0
 port: 9000
 temp-dir: /tmp/plumb/compile
+install: /usr/local/kroc-avr
 include: /usr/local/kroc-avr/include
 occbuild: /usr/local/kroc-avr/bin/avr-occbuild
 linker: /usr/local/kroc-avr/bin/avr-plinker.pl
