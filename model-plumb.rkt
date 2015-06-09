@@ -618,8 +618,10 @@
                                (update))]))
       
       
+      (define result (hash-ref resp "result"))
+      
       (cond 
-        [(equal? OK.COMPILE (hash-ref resp "code"))
+        [(equal? OK.COMPILE (hash-ref result "code"))
          
          (debug 'COMPILE* "Everything is OK.")
          (set! error-message "")
@@ -629,10 +631,10 @@
         
         ;; Do the upload
         (define outp (open-output-file (conf-get "firmware-name") #:exists 'replace))
-        (fprintf outp (hash-ref resp "hex"))
+        (fprintf outp (hash-ref result "hex"))
         (close-output-port outp)
         (flush-ports)
-        (ccmds:avrdude resp)]
+        (ccmds:avrdude result)]
         
         [else 
          (debug 'COMPILE* "You should NEVER be here. This is quite bad.")])
