@@ -103,6 +103,8 @@
   )
 
 (define (compile-driver req)
+  (debug 'COMPILEDRIVER "Start compile-driver.")
+  
   ;; Clean up the request
   (define b64 (request-post-data/raw req))
   (debug 'RAW (~s b64))
