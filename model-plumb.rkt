@@ -578,20 +578,23 @@
                                                      (send p get-context)
                                                      (->string msg)))
                                (update))]))
+      
+      (define result (hash-ref resp "result"))
+      
       (cond
         ;; Everything was fine.
-        [(equal? OK.COMPILE (hash-ref resp "code"))
+        [(equal? OK.COMPILE (hash-ref result "code"))
          (send p message 
                (format "Everything checks out! ~a"
                        (list-ref positives (random (length positives)))))
          ]
         
         ;; There was an error
-        [(equal? ERR.COMPILE (hash-ref resp "code")) 
+        [(equal? ERR.COMPILE (hash-ref result "code")) 
          
          (debug 'COMPILE* "Something is very wrong.")
          
-         (let ([line-and-msg (process-error-message resp)])
+         (let ([line-and-msg (process-error-message result)])
            (set! error-message (second line-and-msg))
            (set! error-line (first line-and-msg)))
          (send p message (format "GURU MEDITATION NUMBER ~a" (number->string (+ (random 2000000) 2000000) 16)))
