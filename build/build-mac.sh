@@ -55,6 +55,9 @@ function thebuild {
 
     announce "Copying stuffs"
     mkdir -p ${PLUMBCONTENTS}/client-config/
+    # Include the client config. This finds the server.
+    cp ../client.yaml ${PLUMBCONTENTS}
+    # And, the binaries for avrdude and whatnot.
     cp -R ../client-config ${PLUMBCONTENTS}/
   
     # This eliminates "file not found" errors for PLT Racket
