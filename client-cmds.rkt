@@ -75,11 +75,11 @@
   req)
     
 
-(define (post-request req)
+(define (post-request req endpoint)
   (debug 'POST "Request: ~n~a~n" req)
   (post-pure-port
      (make-server-url (conf-get 'server) (conf-get 'port)
-                      "compile")
+                      endpoint)
      (base64-encode 
       (string->bytes/utf-8
        (~s (serialize req))))
@@ -93,6 +93,26 @@
   ;;(debug 'READRESPONSE (~s parsed))
   parsed)
   
+(define (check)
+  ;; Build the hash
+  (define req (build-request-package))
+  
+  (debug 'CHECK "Sending request.")
+  
+  ;; Send it. Save the response... 
+  (define resp
+    (let ()
+      (define resp-port (post-request req "check"))
+      (define r (read-all resp-port))
+      (close-input-port resp-port)
+      (read-response r)))
+  
+  ;; We're done here. The next step is to handle the result of
+  ;; what the server has handed us.
+  ;;(debug 'SERVERRESPONSE (~s resp))
+  resp
+  )
+
 (define (compile)
   ;; Create a temp directory
   ;; Also not necessary?
@@ -110,7 +130,7 @@
   ;; Send it. Save the response... 
   (define resp
     (let ()
-      (define resp-port (post-request req))
+      (define resp-port (post-request req "compile"))
       (define r (read-all resp-port))
       (close-input-port resp-port)
       (read-response r)))

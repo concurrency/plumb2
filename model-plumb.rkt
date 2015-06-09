@@ -36,6 +36,9 @@
          (prefix-in ccmds: "client-cmds.rkt")
          "config.rkt"
          "version.rkt"
+         "constants.rkt"
+         ;; Ergh.
+         "seq.rkt"
          )
 
 
@@ -406,7 +409,7 @@
         (send this set-first-check-or-compile? false)
         ;; This loads things from Bitbucket.
         (load-error-regexps))
-      (compile* 'check-syntax))
+      (compile:check-syntax))
     
     
     (define error-regexps (make-parameter false))
@@ -486,15 +489,19 @@
           )))
     
     (define (process-error-message h)
+      (debug 'PEM "processing error message: ~n~n~a~n" h)
       (define response (make-parameter false))
-      (when (hash-has-key? h 'errormessage)
-        (let ([msg (hash-ref h 'errormessage)])
-          (for ([line (regexp-split "\n" (first msg))])
-            (for ([ep (error-regexps)])
-              (when (and (not (response))
-                         (regexp-match (err-pat-pattern ep) line))
-                (response (list h ep line))))))
-        (build-error-message (response))
+      (cond
+        [(hash-has-key? h "details")
+         (let ([msg (hash-ref h "details")])
+           (for ([line (regexp-split "\n" msg)])
+             (for ([ep (error-regexps)])
+               (when (and (not (response))
+                          (regexp-match (err-pat-pattern ep) line))
+                 (response (list h ep line))))))
+         (build-error-message (response))]
+        [else
+         '("~a" foo)]
         ))
     
     
@@ -552,24 +559,84 @@
       'FIXME
       )
     
-    
-    
-    (define/public (compile) 
+    (define/public (compile:check-syntax) 
+      (debug 'CCS "Called compile:check-syntax")
+      
       (conf-add "source-file" main-file)
       (conf-add "board" (get-board-config))
       (conf-add "serial" (send this get-arduino-port))
       (conf-add "firmware-name" "plumbware.hex")
       
-      (define resp (ccmds:compile))
+      (define resp (ccmds:check))
       
-      (define outp (open-output-file (conf-get "firmware-name") #:exists 'replace))
-      (fprintf outp (hash-ref resp "hex"))
-      (close-output-port outp)
-      (flush-ports)
-      (ccmds:avrdude resp)
-      )
+      (debug 'CCS "Response: ~n~s~n" resp)
+      
+      (define p (new process% 
+                     [context 'COMPILE]
+                     [update (λ (msg)
+                               (set! message (format "~a: ~a"
+                                                     (send p get-context)
+                                                     (->string msg)))
+                               (update))]))
+      (cond
+        ;; Everything was fine.
+        [(equal? OK.COMPILE (hash-ref resp "code"))
+         (send p message 
+               (format "Everything checks out! ~a"
+                       (list-ref positives (random (length positives)))))
+         ]
+        
+        ;; There was an error
+        [(equal? ERR.COMPILE (hash-ref resp "code")) 
+         
+         (debug 'COMPILE* "Something is very wrong.")
+         
+         (let ([line-and-msg (process-error-message resp)])
+           (set! error-message (second line-and-msg))
+           (set! error-line (first line-and-msg)))
+         (send p message (format "GURU MEDITATION NUMBER ~a" (number->string (+ (random 2000000) 2000000) 16)))
+         ]
+        
+        [else 
+         (debug 'COMPILE* "You should NEVER EVER be here. This is quite bad.")])
+      
+      resp)
     
+    (define/public (compile) 
+      (define resp (compile:check-syntax))
+      (debug 'COMPILE "Response: ~n~a~n" resp)
+      
+      (define p (new process% 
+                     [context 'COMPILE]
+                     [update (λ (msg)
+                               (set! message (format "~a: ~a"
+                                                     (send p get-context)
+                                                     (->string msg)))
+                               (update))]))
+      
+      
+      (cond 
+        [(equal? OK.COMPILE (hash-ref resp "code"))
+         
+         (debug 'COMPILE* "Everything is OK.")
+         (set! error-message "")
+         (send p message 
+               (format "Everything checks out! ~a"
+                       (list-ref positives (random (length positives)))))
+        
+        ;; Do the upload
+        (define outp (open-output-file (conf-get "firmware-name") #:exists 'replace))
+        (fprintf outp (hash-ref resp "hex"))
+        (close-output-port outp)
+        (flush-ports)
+        (ccmds:avrdude resp)]
+        
+        [else 
+         (debug 'COMPILE* "You should NEVER be here. This is quite bad.")])
+      )
+
     (define (compile* flag)
+      (debug 'COMPILE* "You shouldn't be here, either.")
      'FIXME
       )
     

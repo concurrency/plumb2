@@ -49,6 +49,60 @@
       (set! c (add1 c))
       c)))
 
+(define (check-driver req)
+  ;; Clean up the request
+  (define b64 (request-post-data/raw req))
+  (debug 'RAW (~s b64))
+  (define decoded (base64-decode b64))
+  (debug 'DECODED (~s decoded))
+  (define parsed
+    (deserialize 
+     (read (open-input-string 
+            (bytes->string/utf-8 decoded)))))
+  
+  ;; Copy so it is mutable
+  (define conf (make-hash))
+  (for ([(k v) parsed])
+    (hash-set! conf k v))
+  
+  (debug 'PARSED (~s parsed))
+  
+  (define response (make-hash))
+  ;; Part of my debugging exploration...
+  ;; It seems collecting garbage keeps useage down. Racket probably
+  ;; does a collection as needed, so this isn't strictly necessary.
+  ;; 1000 sequential requests and no apparent file/memory leaks.
+  (collect-garbage)
+ 
+  (hash-set! conf "RAM" (current-memory-use))
+  (hash-set! conf "seq" (compile-counter))
+  (hash-set! conf "start" (current-milliseconds))
+  (hash-set! conf "session-id" (make-id 4))
+  
+  ;; Compile the file.
+  (define resp false)
+  (define STATE 'compile)
+  
+  (let loop ([STATE 'compile]
+             [result false])
+    (case STATE
+      [(compile)
+       (define res (cmds:compile conf))
+       (if (equal? (hash-ref res "code") OK.COMPILE)
+           (loop 'done res)
+           (loop 'error res))]
+      [(done)
+       (hash-set! conf "end" (current-milliseconds))
+       (hash-set! conf "result" (~s result))
+       (hash-set! conf "hex" (hash-ref result "hex"))
+       (set! resp (encode-response conf))]
+      [(error)
+       (set! resp (encode-response result))]))
+  
+  ;; Return the response
+  resp
+  )
+
 (define (compile-driver req)
   ;; Clean up the request
   (define b64 (request-post-data/raw req))
@@ -125,6 +179,7 @@
   (dispatch-rules
    [("ping") ping]
    [("compile") #:method "post" compile-driver]
+   [("check" #:method "post" check-driver)
    [("version") get-version]
    ;; This is necessary to serve static files, I think.
    [else (next-dispatcher)]
