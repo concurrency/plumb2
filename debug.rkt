@@ -73,4 +73,7 @@
      debug-channel       
      (format "[~a] ~a~n"
              key
-             (apply format (cons msg (map filter-hash (list args ...))))))))
+             (apply format (cons 
+                            ;; Issue on Windows w.r.t. temp directories...
+                            (regexp-replace "~1" msg "~~1")
+                            (map filter-hash (list args ...))))))))
