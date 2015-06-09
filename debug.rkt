@@ -75,5 +75,5 @@
              key
              (apply format (cons 
                             ;; Issue on Windows w.r.t. temp directories...
-                            (regexp-replace "~1" msg "~~1")
+                            (regexp-replace* "~1" msg "")
                             (map filter-hash (list args ...))))))))
