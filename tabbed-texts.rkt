@@ -183,48 +183,58 @@
         [(send (current-text) get-filename)
          (send (current-text) save-file)]
         [else
-         (let* ([f (let ([result  "default.occ"])
+         (let* ([result false]
+                [f (let ()
                      (let loop ()
                        (set! result (put-file "Save file as..."))
-                       (unless (and result
-                                    (regexp-match #px".*\\.(occ|module|inc)$" result))
-                         (define d (new dialog% 
-                                        [label "Try again!"]
-                                        ))
-                         (new message% 
-                              [parent d]
-                              [label "Filenames must end in .occ!"])
-                         (new button% 
-                              [parent d]
-                              [label "OK!"] 
-                              [callback (λ (b e) 
-                                          (send d show false))])
-                         (send d show true)
-                         (loop)))
-                     result)]
-                        
-                [filename (let-values ([(base fname dir?)
+                       (cond
+                         [(and (path? result)
+                               (not (regexp-match #px".*\\.(occ|module|inc)$" 
+                                                  (~a result))))
+                          (define d (new dialog% 
+                                         [label "Try again!"]
+                                         ))
+                          (new message% 
+                               [parent d]
+                               [label "Filenames must end in .occ!"])
+                          (new button% 
+                               [parent d]
+                               [label "OK!"] 
+                               [callback (λ (b e) 
+                                           (send d show false))])
+                          (send d show true)
+                          (loop)]
+                         [(and (path? result)
+                               (< (string-length (~a result)) 4))
+                          (set! result 'NoFilename)]
+                         )
+                       )
+                     result)])
+           (debug 'SAVE "Result: ~a ~a" result (path? result))
+           (when (and (path? result)
+                      (>= (string-length (~a result)) 4))
+             (let ([filename (let-values ([(base fname dir?)
                                         (split-path f)])
                             (format "~a" fname))])
-           (when f
-             ;; Copy the existing editor to a 
-             ;; new name in the contents hash
-             (hash-set! contents
-                        (->sym filename)
-                        (current-text))
-             ;; Invalidate the old
-             (hash-set! contents
-                        (->sym (get-label (send tab-panel get-selection)))
-                        false)
-             ;; Update the label, so everything works on the new
-             (send tab-panel set-item-label 
-                   (send tab-panel get-selection) 
-                   filename)
+               (when f
+                 ;; Copy the existing editor to a 
+                 ;; new name in the contents hash
+                 (hash-set! contents
+                            (->sym filename)
+                            (current-text))
+                 ;; Invalidate the old
+                 (hash-set! contents
+                            (->sym (get-label (send tab-panel get-selection)))
+                            false)
+                 ;; Update the label, so everything works on the new
+                 (send tab-panel set-item-label 
+                       (send tab-panel get-selection) 
+                       filename)
+                 
+                 (send (current-text) set-filename f)
+                 (send (current-text) save-yourself))
              
-             (send (current-text) set-filename f)
-             (send (current-text) save-yourself)
-             
-             ))
+             )))
          ]))
     
     (define/public (save-as)
