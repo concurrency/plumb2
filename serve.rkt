@@ -138,6 +138,7 @@
   
   (let loop ([STATE 'compile]
              [result false])
+    (debug 'COMPILEDRIVER "State: ~a" STATE)
     (case STATE
       [(compile)
        (define res (cmds:compile conf))

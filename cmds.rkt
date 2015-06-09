@@ -49,6 +49,7 @@
      
 
 (define (compile conf)
+  (debug 'COMPILE "***** COMPILE *****")
   (define cmd (compile-cmd conf (hash-ref conf "main")))
   (define session-dir (hash-ref conf "session-id"))
   
