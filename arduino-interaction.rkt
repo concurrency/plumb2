@@ -27,7 +27,8 @@
         "util.rkt")
 
 (provide list-arduinos
-         avrdude-cmd)
+         ;; avrdude-cmd
+         )
 
 (define (list-arduinos)
   (case (system-type)
@@ -65,6 +66,7 @@
     [(windows)
      (format "\"~a\"" (path->string path))]))
 
+#|
 (define (avrdude-cmd config file board-config serial-port)
   (system-call
    (quote-path (send config get-config 'AVRDUDE))
@@ -76,3 +78,4 @@
         (-P ,serial-port)
         -D -U 
         ,(format "flash:w:~a" (extract-filename file)))))
+|#

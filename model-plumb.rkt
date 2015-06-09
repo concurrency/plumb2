@@ -27,7 +27,6 @@
 (require 
   net/dns
   yaml
-  racket/runtime-path
   )
 
 (require "arduino-interaction.rkt"
@@ -40,8 +39,6 @@
          "version.rkt"
          )
 
-;; To reference client.yaml
-(define-runtime-path here (build-path "."))
 
 (define MIN-FIRMWARE-SIZE 10000)
 ;(define CLIENT-CONF-ROOT "http://concurrency.cc/plumb/client-conf")
@@ -69,7 +66,7 @@
            [version 0]
            [id false]
            
-           [config false]
+           ;;[config false]
            [board-config false]
            
            [arduino-ports empty]
@@ -118,8 +115,8 @@
                          (exit)
                          )])
         
-        (define client.yaml (file->yaml (build-path here "client.yaml")))
-        
+        (define client.yaml (config))
+
         (debug 'APP-LAUNCH "HOST CONFIG: ~a" client.yaml)
         (cond
           [(hash? client.yaml)
@@ -140,7 +137,7 @@
     
     ;; For debugging
     (define/public (get-config key)
-      (send config get-config key))    
+      (conf-get key))    
     
     (define/public (set-examples-root str)
       (set! examples-root str))
@@ -251,25 +248,24 @@
     ;   ;;   ;;; ;;;    ;;   ;;;;;;;;  ;;   ;;  ;;    ;;
     ;   ;;;;;;;   ;;;;;;;;   ;;     ;; ;;    ;; ;;;;;;;
     ;   ;;;;;;      ;;;;    ;;      ;; ;;    ;;;;;;;;;
-    
+   
     ;; Should be a list of strings.
     (define/public (get-board-choices)
-      (filter string?
-              (map (λ (s)
-                     (let ([m (regexp-match #rx"\\s*(.*)\\s*:\\s*(.*)\\s*" s)])
-                       (cond
-                         [m
-                          (let ([board (list-ref m 1)]
-                                [mapping (list-ref m 2)])
-                            (hash-set! board-mapping board mapping)
-                            board)]
-                         [else 'error])))
-                   (get-static #:as 'text "ide" "board-choices.rkt"))))
+      (let ([all '()])
+        (define boards (conf-get "boards"))
+        (for ([b boards])
+          (for ([n (hash-ref b "names")])
+            (set! all (snoc all n)))
+            )
+        all))
     
     (define (board-choice->board-type choice)
-      (define mapping (hash-ref board-mapping choice))
-      (debug 'BC->BT "~a => ~a" choice mapping)
-      mapping)
+      (define choice "arduino")
+      (for ([b (conf-get "boards")])
+        (when (member choice (hash-ref b "names"))
+          (set! choice (hash-ref b "family"))))
+      choice)
+
     
     (define/public (set-board-type b)
       (set! board-type (board-choice->board-type b)))
@@ -553,7 +549,7 @@
     
     
     (define/public (compile) 
-      
+      'FIXME
       )
     
     (define (compile* flag)

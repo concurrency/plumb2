@@ -86,7 +86,7 @@
   (debug 'READURL "Reading all from: ~a~n" str)
   (read-all (get-pure-port 
              (string->url str)
-             (list "User-Agent: PLT Racket/5.3.3 (Plumb)"))))
+             (list "User-Agent: PLT Racket/6.0.0 (Plumb)"))))
 
 (define (strip str)
   (for ([pat '("^[ ]+" "[ ]+$" "\n" "\r")])

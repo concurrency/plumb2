@@ -1,8 +1,11 @@
 #lang racket
 (require yaml
+         racket/runtime-path
          "debug.rkt")
 
 (provide (all-defined-out))
+
+;; (define-runtime-path here (build-path "."))
 
 (define config-file (make-parameter false))
 (define config (make-parameter false))

@@ -22,8 +22,10 @@
 
 #lang racket
 
-(require racket/gui 
+(require yaml
+         racket/gui 
          framework
+         racket/runtime-path
          )
 
 (require "tabbed-texts.rkt"
@@ -34,7 +36,13 @@
          "util.rkt"
          "util-gui.rkt"
          "version.rkt"
+         ;;
+         "config.rkt"
          )
+
+
+;; To reference client.yaml
+(define-runtime-path here (build-path "."))
 
 (define NUMBER-OF-ERROR-LINES 3)
 
@@ -434,8 +442,21 @@
       ;; Need this to build the IDE
       (set! hardware (new plumb%))
       ;; (send hardware load-config)
+      ;; Load our configuration (client.yaml by default)
+      (config-file (build-path here "client.yaml"))
+      (load-config)
+      
+      (conf-add "boards" 
+                (string->yaml
+                 (read-url (format "http://~a:~a/ide/boards.yaml" 
+                                   (conf-get 'server)
+                                   (conf-get 'port)))))
+      
       (send hardware enumerate-arduinos)
+      
+      
       (send hardware compilation-server-config)
+      (debug 'HERE "HERE")
       (send hardware add-view this)
       (send hardware say-hello)
       (enable-debug! 'ALL)

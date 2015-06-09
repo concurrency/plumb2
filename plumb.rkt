@@ -51,15 +51,20 @@
 (define cmd-line-params (make-hash))
 
 (define board-string
-  (let ()
+  (let ([all '()])
     (define boards (file->yaml "boards.yaml"))
-    (map (λ (b) (hash-ref b "name")) boards)))
+    (for ([b boards])
+      (for ([n (hash-ref b "names")])
+        (set! all (snoc all (format "~a (family: ~a)" n (hash-ref b "family"))))
+        ))
+    all))
 
 (define (get-board b)
   (define boards (file->yaml "boards.yaml"))
   (define result false)
   (for ([brd boards])
-    (when (equal? b (hash-ref brd "name"))
+    (debug 'GB "~a : ~a" b (hash-ref brd "family"))
+    (when (equal? b (hash-ref brd "family"))
       (set! result (hash-ref brd "params"))))
   result)
 
@@ -77,8 +82,7 @@
                  (config-file c)]
 
    [("--board") board
-                ("Choose the target board."
-                 "Allowed options: "
+                ((format "~n\tChoose the board family for your Arduino.")
                  (apply string-append
                         (map (λ (b) (format "\t* ~a~n" b)) board-string)))
                 
