@@ -1,2 +1,6 @@
 compiled/
 ignore/
+build-mac/
+completed-builds/
+src/
+plumbware.hex
