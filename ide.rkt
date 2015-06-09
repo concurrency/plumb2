@@ -456,7 +456,7 @@
       
       
       (send hardware compilation-server-config)
-      (debug 'HERE "HERE")
+      
       (send hardware add-view this)
       (send hardware say-hello)
       (enable-debug! 'ALL)
