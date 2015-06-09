@@ -179,7 +179,7 @@
   (dispatch-rules
    [("ping") ping]
    [("compile") #:method "post" compile-driver]
-   [("check" #:method "post" check-driver)]
+   [("check") #:method "post" check-driver]
    [("version") get-version]
    ;; This is necessary to serve static files, I think.
    [else (next-dispatcher)]
