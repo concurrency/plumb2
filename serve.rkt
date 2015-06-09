@@ -50,6 +50,8 @@
       c)))
 
 (define (check-driver req)
+   (debug 'CHECKDRIVER "Start check-driver.")
+  
   ;; Clean up the request
   (define b64 (request-post-data/raw req))
   (debug 'RAW (~s b64))
