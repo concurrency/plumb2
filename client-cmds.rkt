@@ -32,6 +32,7 @@
          "constants.rkt")
 
 (provide compile
+         check
          avrdude)
 
 
