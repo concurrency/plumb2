@@ -145,13 +145,14 @@
 (define (avrdude conf)
   
   ;; (debug 'AVRDUDE "~nBOARD:~n~a~n" conf)
-  (show-conf conf)
+  ;;(show-conf conf)
   
   (define board (hash-ref (hash-ref conf "client-config") "board"))
   (define cmd
     (system-call
-     (conf-get "avrdude")
+     (conf-get "AVRDUDE")
      `(-V -F 
+          -C ,(conf-get "AVRDUDE.CONF")
           -p ,(hash-ref board "mcpu")
           -c ,(hash-ref board "programmer")
           ;; FIXME MCJ 20150608 Will this always be where the firmware is?

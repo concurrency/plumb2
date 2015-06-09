@@ -444,6 +444,7 @@
       ;; (send hardware load-config)
       ;; Load our configuration (client.yaml by default)
       (config-file (build-path here "client.yaml"))
+      
       (load-config)
       
       (conf-add "boards" 
@@ -451,6 +452,10 @@
                  (read-url (format "http://~a:~a/ide/boards.yaml" 
                                    (conf-get 'server)
                                    (conf-get 'port)))))
+      
+      
+      (load-additional-client-config)
+      
       
       (send hardware enumerate-arduinos)
       
