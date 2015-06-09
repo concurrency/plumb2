@@ -161,6 +161,8 @@
           -P ,(conf-get "serial")
           )))
   
+  (debug 'AVRDUDE "CMD: ~a" cmd)
+  
   (define result (make-hash))
   
   (let-values ([(stdout stdin pid stderr control)

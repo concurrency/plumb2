@@ -89,6 +89,11 @@
                        platform
                        "conf"))
   
+  (conf-add 'TEMPPATH (find-system-path 'temp-dir))
+  
+  (conf-add "firmware-name" (build-path
+                             (conf-get 'TEMPPATH)
+                             "plumbware.hex"))
   
   (conf-add 'AVRDUDE.CONF (build-path 
                            (conf-get 'CONFPATH)

@@ -560,16 +560,15 @@
       )
     
     (define/public (compile:check-syntax) 
-      (debug 'CCS "Called compile:check-syntax")
+      (debug 'COMPILE:CHECK "Called compile:check-syntax")
       
       (conf-add "source-file" main-file)
       (conf-add "board" (get-board-config))
       (conf-add "serial" (send this get-arduino-port))
-      (conf-add "firmware-name" "plumbware.hex")
       
       (define resp (ccmds:check))
       
-      (debug 'CCS "Response: ~n~s~n" resp)
+      (debug 'COMPILE:CHECK "Response: ~n~s~n" resp)
       
       (define p (new process% 
                      [context 'COMPILE]
@@ -588,6 +587,8 @@
       (cond
         ;; Everything was fine.
         [(equal? OK.COMPILE (hash-ref result "code"))
+         (debug 'COMPILE:CHECK "OK.COMPILE")
+         
          (send p message 
                (format "Everything checks out! ~a"
                        (list-ref positives (random (length positives)))))
@@ -596,7 +597,7 @@
         ;; There was an error
         [(equal? ERR.COMPILE (hash-ref result "code")) 
          
-         (debug 'COMPILE* "Something is very wrong.")
+         (debug 'COMPILE:CHECK "ERR.COMPILE Something is very wrong.")
          
          (let ([line-and-msg (process-error-message result)])
            (set! error-message (second line-and-msg))
@@ -605,20 +606,22 @@
          ]
         
         [else 
-         (debug 'COMPILE* "You should NEVER EVER be here. This is quite bad.")])
+         (debug 'COMPILE:CHECK "You should NEVER EVER be here. This is quite bad.")])
       
       resp)
     
     (define/public (compile) 
       
+      (debug 'COMPILE "Invoked (compile)")
+      
       (conf-add "source-file" main-file)
       (conf-add "board" (get-board-config))
       (conf-add "serial" (send this get-arduino-port))
-      (conf-add "firmware-name" "plumbware.hex")
+      
       
       (define resp (ccmds:compile))
       
-      (debug 'COMPILE "Response: ~n~a~n" resp)
+      (debug 'COMPILE "Response: ~n~a~n" (show-conf resp))
       
       (define p (new process% 
                      [context 'COMPILE]
@@ -635,10 +638,14 @@
             (hash-ref resp "result")
             resp))
       
+      (debug 'COMPILE "Result...")
+      (show-conf result)
+      
       (cond 
         [(equal? OK.IHEXMERGE (hash-ref result "code"))
          
-         (debug 'COMPILE* "Everything is OK.")
+         (debug 'COMPILE "OK.IHEXMERGE")
+         
          (set! error-message "")
          (send p message 
                (format "Everything checks out! ~a"
@@ -649,13 +656,19 @@
         (fprintf outp (hash-ref resp "hex"))
         (close-output-port outp)
         (flush-ports)
-        (ccmds:avrdude resp)]
+        (debug 'COMPILE "Calling AVRDUDE")
+        (ccmds:avrdude resp)
+        ;; Cleanup
+        (when (file-exists? (conf-get "firmware-name"))
+          (delete-file (conf-get "firmware-name")))
+        ]
         
         [(equal? ERR.COMPILE (hash-ref result "code"))
+         (debug 'COMPILE "ERR.COMPILE")
          (compile:check-syntax) ]
         
         [else 
-         (debug 'COMPILE* "You should NEVER be here. This is quite bad.")])
+         (debug 'COMPILE "You should NEVER be here. This is quite bad.")])
       )
 
     (define (compile* flag)
