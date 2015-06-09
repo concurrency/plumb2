@@ -10,6 +10,21 @@
 
 (provide (all-defined-out))
 
+
+(define (quote-path path)
+  (debug 'QP "System type: ~a" (system-type))
+  (case (system-type)
+    ;; FIXME
+    ;; Might be a problem on the Mac as well.
+    [(macosx) (path->string path)]
+    [(windows)
+     (format "\"~a\"" (path->string path))]))
+
+(define (win-string-quote str)
+  (if (equal? 'windows (system-type))
+      (format "\"~a\"" str)
+      str))
+
 (define (flush-ports)
   (flush-output (current-output-port))
   (flush-output (current-error-port)))

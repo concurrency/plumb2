@@ -7,9 +7,9 @@ function thebuild {
   UPLOAD=$3
 
   DATE=`date +%Y%m%d`
-  SRC=~/git/plumb
-  BUILD=$SRC/build-win
-  DEST=$BUILD/$DDNAME-$DATE
+  SRC=~/git/plumb2
+  BUILD=~/build/build-win
+  DEST="$BUILD/$DDNAME-$DATE"
   RACO=/c/Program\ Files/Racket/raco.exe
   RACKET=/c/Program\ Files/Racket/racket.exe
   ZIP=/c/Program\ Files/7-Zip/7z.exe
@@ -32,17 +32,23 @@ function thebuild {
 
   pushd "$BUILD"
   
-    echo Write version file
-    pushd ..
-    rm -f version.rkt
-    "$RACKET" build/write-version.rkt
-    popd
+    # echo Write version file
+    # pushd ..
+    # rm -f version.rkt
+    # "$RACKET" build/write-version.rkt
+    # popd
  
     echo   Build Executable
     cp "$SRC"/build/"$ICON.ico" "$BUILD"
     "$RACO" exe --ico "$ICON.ico" -o "$DDNAME.exe" "$SRC/$SOURCE"
     rm "$ICON.ico" 
+    
+    if [[ -f "$DDNAME.exe" ]]; then
+      echo "$DDNAME.exe" exists!
+    fi
+
     echo   Make It Distributable
+    echo   Destination: "$DEST"
     "$RACO" distribute "$DEST" "$DDNAME.exe"
     echo Remove the original build to eliminate confusion
     rm "$BUILD/$DDNAME.exe"
@@ -51,6 +57,7 @@ function thebuild {
   echo Copy Needed Directories
   cp -R "$SRC/client-config" "$DEST/client-config"
 
+  # If there is a zip file hanging around...
   mkdir -p ../completed-builds/
   cp "$DDNAME-$DATE.zip" ../completed-builds/
 
@@ -70,12 +77,8 @@ function thebuild {
     fi
   popd
 
-
-  # echo SCP Everything
-  # "$PSCP" "$DDNAME.zip" jadudm@transterpreter.org:/srv/www/org/transterpreter.download/files/flow/
-
   echo End Of Script
 }
 
 thebuild Plumb ide.rkt $1
-thebuild PlumbBYOE plumb-byoe.rkt $1
+# thebuild PlumbBYOE plumb-byoe.rkt $1

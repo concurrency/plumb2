@@ -142,14 +142,6 @@
   resp
   )
 
-(define (quote-path path)
-  (case (system-type)
-    ;; FIXME
-    ;; Might be a problem on the Mac as well.
-    [(macosx) (path->string path)]
-    [(windows)
-     (format "\"~a\"" (path->string path))]))
-
 (define (avrdude conf)
   
   ;; (debug 'AVRDUDE "~nBOARD:~n~a~n" conf)
@@ -158,7 +150,7 @@
   (define board (hash-ref (hash-ref conf "client-config") "board"))
   (define cmd
     (system-call
-     (conf-get "AVRDUDE")
+     (quote-path (conf-get "AVRDUDE"))
      `(-V -F 
           -C ,(quote-path (conf-get "AVRDUDE.CONF"))
           -p ,(hash-ref board "mcpu")
@@ -166,10 +158,7 @@
           ;; FIXME MCJ 20150608 Will this always be where the firmware is?
           -U ,(format "flash:w:~a:i" (quote-path (conf-get "firmware-name")))
           -b ,(hash-ref board "baud")
-          -P ,(let ([s (conf-get "serial")])
-                (if (equal? 'windows (system-type))
-                    (format "\"~a\"" s)
-                    s))
+          -P ,(win-string-quote (conf-get "serial"))
           )))
   
   (debug 'AVRDUDE "CMD: ~a" cmd)

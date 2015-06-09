@@ -58,14 +58,6 @@
 (define (install-firmware board-config)
   '...)
 
-(define (quote-path path)
-  (case (system-type)
-    ;; FIXME
-    ;; Might be a problem on the Mac as well.
-    [(macosx) (path->string path)]
-    [(windows)
-     (format "\"~a\"" (path->string path))]))
-
 #|
 (define (avrdude-cmd config file board-config serial-port)
   (system-call
