@@ -93,7 +93,7 @@
            (loop 'error res))]
       [(done)
        (hash-set! conf "end" (current-milliseconds))
-       (hash-set! conf "result" (~s result))
+       (hash-set! conf "result" result)
        (set! resp (encode-response conf))]
       [(error)
        (set! resp (encode-response result))]))
