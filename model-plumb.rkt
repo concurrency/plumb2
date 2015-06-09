@@ -265,15 +265,18 @@
         all))
     
     (define (board-choice->board-type choice)
-      (define choice "arduino")
       (for ([b (conf-get "boards")])
-        (when (member choice (hash-ref b "names"))
+        (define names (hash-ref b "names"))
+        (debug 'BOARD "Looking for '~s' in ~s" choice names) 
+        (when (member choice names)
           (set! choice (hash-ref b "family"))))
       choice)
 
     
     (define/public (set-board-type b)
-      (set! board-type (board-choice->board-type b)))
+      (define found (board-choice->board-type b))
+      (debug 'BOARD "Setting board type: ~a -> ~a" b found)
+      (set! board-type found))
     
     (define/public (get-board-type) board-type)
     
@@ -283,6 +286,7 @@
         (when (equal? (hash-ref b "family")
                       board-type)
           (set! bc (hash-ref b "params"))))
+      (debug 'BOARD "Params for board ~a:~n~a~n" board-type bc)
       bc)
     
     

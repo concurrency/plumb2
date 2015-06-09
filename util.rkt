@@ -13,12 +13,19 @@
 
 (define (quote-path path)
   (debug 'QP "System type: ~a" (system-type))
-  (case (system-type)
-    ;; FIXME
-    ;; Might be a problem on the Mac as well.
-    [(macosx) (path->string path)]
-    [(windows)
-     (format "\"~a\"" (path->string path))]))
+  (cond
+    [(path? path)
+     (case (system-type)
+       ;; FIXME
+       ;; Might be a problem on the Mac as well.
+       [(macosx) (path->string path)]
+       [(windows)
+        (format "\"~a\"" (path->string path))]
+       [else (path->string path)])]
+    [else
+     (debug 'QP "Passing string '~a' straight through." path)
+     path]))
+     
 
 (define (win-string-quote str)
   (if (equal? 'windows (system-type))

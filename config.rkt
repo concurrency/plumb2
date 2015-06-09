@@ -107,7 +107,7 @@
      (conf-add 'AVRDUDE (build-path 
                          (conf-get 'BINPATH)
                          "avrdude"))]
-    [(linux)
+    [else
      ;; Use the system avrdude.
      (conf-add 'AVRDUDE "avrdude")])
   

@@ -152,7 +152,10 @@
     (system-call
      (quote-path (conf-get "AVRDUDE"))
      `(-V -F 
-          -C ,(quote-path (conf-get "AVRDUDE.CONF"))
+          ,@(if (member (system-type) '(windows macosx))
+               `(-C ,(quote-path (conf-get "AVRDUDE.CONF")))
+               ;; Just be more verbose under Linux.
+               `(-V))
           -p ,(hash-ref board "mcpu")
           -c ,(hash-ref board "programmer")
           ;; FIXME MCJ 20150608 Will this always be where the firmware is?
