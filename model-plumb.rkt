@@ -26,7 +26,6 @@
 
 (require 
   net/dns
-  yaml
   )
 
 (require "arduino-interaction.rkt"
@@ -34,7 +33,7 @@
          "mvc.rkt"
          "debug.rkt"
          "util.rkt"
-         "cmds.rkt"
+         (prefix-in ccmds: "client-cmds.rkt")
          "config.rkt"
          "version.rkt"
          )
@@ -236,6 +235,9 @@
     (define/public (set-arduino-port p)
       (set! arduino-port (port->platform-specific-port p)))
     
+    (define/public (get-arduino-port)
+      arduino-port)
+    
     
     ;   ;;;;;;      ;;;;        ;;     ;;;;;    ;;;;;;
     ;   ;;  ;;    ;;;;;;;;      ;;     ;;;;;;;  ;;;;;;;
@@ -273,8 +275,12 @@
     (define/public (get-board-type) board-type)
     
     (define (get-board-config)
-      'FIXME
-      )
+      (define bc false)
+      (for ([b (conf-get "boards")])
+        (when (equal? (hash-ref b "family")
+                      board-type)
+          (set! bc (hash-ref b "params"))))
+      bc)
     
     
     ;   ;;;;;;; ;;  ;;      ;;;;;;;    ;;
@@ -549,7 +555,18 @@
     
     
     (define/public (compile) 
-      'FIXME
+      (conf-add "source-file" main-file)
+      (conf-add "board" (get-board-config))
+      (conf-add "serial" (send this get-arduino-port))
+      (conf-add "firmware-name" "plumbware.hex")
+      
+      (define resp (ccmds:compile))
+      
+      (define outp (open-output-file (conf-get "firmware-name") #:exists 'replace))
+      (fprintf outp (hash-ref resp "hex"))
+      (close-output-port outp)
+      (flush-ports)
+      (ccmds:avrdude resp)
       )
     
     (define (compile* flag)

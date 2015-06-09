@@ -21,9 +21,7 @@
 ;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ;; THE SOFTWARE.
 
-(require yaml
-         json
-         racket/serialize
+(require racket/serialize
          net/base64
          net/url)
 
@@ -33,7 +31,8 @@
          "config.rkt"
          "constants.rkt")
 
-(provide compile)
+(provide compile
+         avrdude)
 
 
 
@@ -121,3 +120,54 @@
   ;;(debug 'SERVERRESPONSE (~s resp))
   resp
   )
+
+(define (avrdude conf)
+  
+  ;; (debug 'AVRDUDE "~nBOARD:~n~a~n" conf)
+  (show-conf conf)
+  
+  (define board (hash-ref (hash-ref conf "client-config") "board"))
+  (define cmd
+    (system-call
+     (conf-get "avrdude")
+     `(-V -F 
+          -p ,(hash-ref board "mcpu")
+          -c ,(hash-ref board "programmer")
+          ;; FIXME MCJ 20150608 Will this always be where the firmware is?
+          -U ,(format "flash:w:~a:i" (conf-get "firmware-name"))
+          -b ,(hash-ref board "baud")
+          -P ,(conf-get "serial")
+          )))
+  
+  (define result (make-hash))
+  
+  (let-values ([(stdout stdin pid stderr control)
+                (apply values (process cmd))])
+    (let loop ([status (control 'status)])
+        (case status
+          [(running)  
+           (define c (read-char stderr))
+           (display c)
+           (flush-ports)
+           (loop (control 'status))]
+          
+          [(done-ok) 
+           (let ([text (read-all stdout)])
+             (close-input-port stdout)
+             (close-input-port stderr)
+             (close-output-port stdin)
+             (control 'kill)
+             ;; Build an ok response
+             (hash-set! result "output" text)
+             (hash-set! result "code" OK.AVRDUDE)
+             )
+           ]
+          [(done-error)
+           (close-input-port stdout)
+           (close-input-port stderr)
+           (close-output-port stdin)
+           (control 'kill)
+           
+           (hash-set! result "code" ERR.AVRDUDE)
+           ])))
+  result)

@@ -26,3 +26,16 @@
   (for ([(k v) (config)])
     (debug 'CONFIG "~a <- ~a" k v)))
 
+;; Used in avrdude in client-cmds.rkt
+(define (show-conf conf)
+  (for ([(k v) conf])
+    (debug 'CONF "~a <- ~a"
+           k
+           (cond
+             [(and (string? v) (> (string-length v) 30))
+              (~a v #:max-width 30)]
+             [(hash? v) 
+              (debug 'CONF "~a~n---~n" k)
+              (show-conf v)]
+             [else
+              (~a v)]))))
