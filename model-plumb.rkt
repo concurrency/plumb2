@@ -552,8 +552,9 @@
     
     
     
-    (define/public (compile)
-      (compile* 'compile))
+    (define/public (compile) 
+      
+      )
     
     (define (compile* flag)
      'FIXME

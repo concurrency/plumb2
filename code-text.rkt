@@ -138,6 +138,7 @@
     
     ;; This doesn't work.
     (define/public (highlight-line n)
+      (debug 'CTHL "hl FIXME: ~a" n)
       (define loc 0)
       (for ([i (in-range (sub1 n))])
         (set! loc (+ loc (send this find-newline 'forward loc))))

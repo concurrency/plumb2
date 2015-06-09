@@ -159,6 +159,7 @@
                             "")))
     
     (define/public (highlight-line n)
+      (debug 'HIGHLIGHTLINE "hl: ~a" n)
       (send (current-text) highlight-line n))
     
     
