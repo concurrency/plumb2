@@ -610,7 +610,14 @@
       resp)
     
     (define/public (compile) 
-      (define resp (compile:check-syntax))
+      
+      (conf-add "source-file" main-file)
+      (conf-add "board" (get-board-config))
+      (conf-add "serial" (send this get-arduino-port))
+      (conf-add "firmware-name" "plumbware.hex")
+      
+      (define resp (ccmds:compile))
+      
       (debug 'COMPILE "Response: ~n~a~n" resp)
       
       (define p (new process% 
@@ -629,7 +636,7 @@
             resp))
       
       (cond 
-        [(equal? OK.COMPILE (hash-ref result "code"))
+        [(equal? OK.IHEXMERGE (hash-ref result "code"))
          
          (debug 'COMPILE* "Everything is OK.")
          (set! error-message "")
@@ -645,7 +652,7 @@
         (ccmds:avrdude resp)]
         
         [(equal? ERR.COMPILE (hash-ref result "code"))
-         (debug 'COMPILE* "Already handled the error.")]
+         (compile:check-syntax) ]
         
         [else 
          (debug 'COMPILE* "You should NEVER be here. This is quite bad.")])

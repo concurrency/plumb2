@@ -1,0 +1,35 @@
+- family: "arduino"
+  names: 
+    - "Arduino Duemilanove"
+    - "Freeduino"
+  params:
+    programmer: "arduino"
+    baud: 57600
+    mcpu: "atmega328p"
+    F_CPU: 16000000
+    start-address: "4F00"
+    firmware: "tvm-avr-atmega328p-16000000-arduino.hex"
+
+- family: "pro"
+  names: 
+    - "Arduino Pro 3.3V" 
+    - "Pro Mini 3.3V"
+  params:
+    programmer: "arduino"
+    baud: 57600
+    mcpu: "atmega328p"
+    F_CPU: 8000000
+    start-address: "4F00"
+    firmware: "tvm-avr-atmega328p-8000000-arduinopro.hex"
+
+- family: "uno"
+  names: 
+    - "Arduino Uno"
+    - "Motino"
+  params:
+    programmer: "arduino"
+    baud: 115200
+    mcpu: "atmega328p"
+    F_CPU: 8000000
+    start-address: "4F00"
+    firmware: "tvm-avr-atmega328p-16000000-arduinouno-0624.hex"
