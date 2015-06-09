@@ -319,6 +319,9 @@
                                  (replace-tags-in-code s))))]
              ))
       
+      ;; 20150609 MCJ
+      ;; This no longer exists... we don't upload things separately.
+      #|
       (define arduino (new menu%
                            [label "Hardware"]
                            [parent menu-bar]))
@@ -329,6 +332,7 @@
                       [callback
                        (λ (m e)
                          (send hardware user-upload-firmware))]))
+      |#
       
       (define help (new menu%
                         [label "&Help"]
