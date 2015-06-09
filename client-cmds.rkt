@@ -166,7 +166,10 @@
           ;; FIXME MCJ 20150608 Will this always be where the firmware is?
           -U ,(format "flash:w:~a:i" (quote-path (conf-get "firmware-name")))
           -b ,(hash-ref board "baud")
-          -P ,(quote-path (conf-get "serial"))
+          -P ,(let ([s (conf-get "serial")])
+                (if (equal? 'windows (system-type))
+                    (format "\"~a\"" s)
+                    s))
           )))
   
   (debug 'AVRDUDE "CMD: ~a" cmd)
