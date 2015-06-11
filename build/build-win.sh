@@ -57,13 +57,13 @@ function thebuild {
   echo Copy Needed Directories
   cp -R "$SRC/client-config" "$DEST/client-config"
 
-  # If there is a zip file hanging around...
-  mkdir -p ../completed-builds/
-  cp "$DDNAME-$DATE.zip" ../completed-builds/
 
   pushd "$BUILD"
     echo Zip Everything
     "$ZIP" a -r "$DDNAME-$DATE.zip" "$DDNAME-$DATE"
+    mkdir -p ../completed-builds/
+    cp "$DDNAME-$DATE.zip" ../completed-builds/
+
     if [[ $UPLOAD = "upload" ]]; then
       if [[ -f ~/.ssh/small-imac-berea ]]; then
         KEY=~/.ssh/small-imac-berea
