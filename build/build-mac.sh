@@ -113,5 +113,5 @@ function thebuild {
 announce "Building the IDE"
 thebuild Plumb ide.rkt $1
 
-#announce "Building the BYOE"
-#thebuild PlumbBYOE plumb-byoe.rkt $1
+announce "Building the BYOE"
+thebuild PlumbBYOE plumb-byoe.rkt $1
