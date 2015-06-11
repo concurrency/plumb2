@@ -451,7 +451,7 @@
       (load-additional-client-config)
       
       
-      (config-file (build-path (conf-get 'APP-ROOT) "client.yaml"))
+      (config-file (build-path (conf-get 'CLIENT-CONFIG) "client.yaml"))
       (debug 'CONFIGLOAD "~s" (config-file))
       
       (load-config)

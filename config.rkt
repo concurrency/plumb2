@@ -79,6 +79,10 @@
      (conf-add 'APP-ROOT (current-directory))
      (conf-add 'CONTENTS (conf-get 'APP-ROOT))])
   
+  (conf-add 'CLIENT-CONFIG (build-path
+                            (conf-get 'CONTENTS)
+                            "client-config"))
+  
   (conf-add 'BINPATH (build-path 
                       (conf-get 'CONTENTS)
                       "client-config" 
