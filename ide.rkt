@@ -42,7 +42,7 @@
 
 
 ;; To reference client.yaml
-(define-runtime-path here (build-path "."))
+;; (define-runtime-path here (build-path "."))
 
 (define NUMBER-OF-ERROR-LINES 3)
 
@@ -447,7 +447,12 @@
       (set! hardware (new plumb%))
       ;; (send hardware load-config)
       ;; Load our configuration (client.yaml by default)
-      (config-file (build-path here "client.yaml"))
+      
+      (load-additional-client-config)
+      
+      
+      (config-file (build-path (conf-get 'APP-ROOT) "client.yaml"))
+      (debug 'CONFIGLOAD "~s" (config-file))
       
       (load-config)
       
@@ -456,9 +461,6 @@
                  (read-url (format "http://~a:~a/ide/boards.yaml" 
                                    (conf-get 'server)
                                    (conf-get 'port)))))
-      
-      
-      (load-additional-client-config)
       
       
       (send hardware enumerate-arduinos)

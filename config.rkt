@@ -9,7 +9,7 @@
 ;; (define-runtime-path here (build-path "."))
 
 (define config-file (make-parameter false))
-(define config (make-parameter false))
+(define config (make-parameter (make-hash)))
 
 (define (conf-add key value)
   (debug 'ADD (format "~a <- ~a" key value))
@@ -19,7 +19,8 @@
   (hash-ref (config) (format "~a" key)))
 
 (define (load-config)
-  (config (file->yaml (config-file)))
+  (for ([(k v) (file->yaml (config-file))])
+    (conf-add k v))
   (show-config))
 
 (define (show-config)
