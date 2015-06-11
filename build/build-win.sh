@@ -81,4 +81,4 @@ function thebuild {
 }
 
 thebuild Plumb ide.rkt $1
-# thebuild PlumbBYOE plumb-byoe.rkt $1
+thebuild PlumbBYOE plumb-byoe.rkt $1
