@@ -4,3 +4,4 @@ build-mac/
 completed-builds/
 src/
 plumbware.hex
+.DS_Store

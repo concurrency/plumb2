@@ -41,11 +41,6 @@
          "seq.rkt"
          )
 
-
-(define MIN-FIRMWARE-SIZE 10000)
-;(define CLIENT-CONF-ROOT "http://concurrency.cc/plumb/client-conf")
-(define CLIENT-CONF-ROOT "http://45.55.232.116:8080/ide/conf")
-
 (define plumb%
   (class model%
     (super-new)
@@ -99,9 +94,6 @@
     
     (define/public (get-first-check-or-compile?)
       first-check-or-compile?)
-    
-    (define (client-conf str)
-      (format "~a/~a" CLIENT-CONF-ROOT str))
     
     (define/public (get-host)
       host)
