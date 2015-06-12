@@ -48,6 +48,31 @@
 
      
 
+;                                                                       
+;                                                                       
+;                                                                       
+;                                                                       
+;                                                                       
+;                                                                       
+;                                                                       
+;                                                                       
+;      ;;;;;     ;;;;     ;;;      ;;;  ;;;;;;;   ;;  ;;       ;;;;;;;; 
+;     ;;   ;   ;;;  ;;    ;;;      ;;;  ;;    ;;  ;;  ;;       ;;       
+;    ;;        ;     ;;   ;;;     ;;;;  ;;     ;  ;;  ;;       ;;       
+;   ;;        ;;      ;;  ;;;;    ; ;;  ;;     ;  ;;  ;;       ;;       
+;   ;;        ;;      ;;  ;; ;    ; ;;  ;;    ;;  ;;  ;;       ;;       
+;   ;;        ;       ;;  ;; ;;  ;; ;;  ;;;;;;;   ;;  ;;       ;;;;;;;  
+;   ;;        ;;      ;;  ;;  ;  ;  ;;  ;;        ;;  ;;       ;;       
+;   ;;        ;;      ;;  ;;  ;  ;  ;;  ;;        ;;  ;;       ;;       
+;    ;;        ;     ;;   ;;  ;;;   ;;  ;;        ;;  ;;       ;;       
+;     ;;   ;   ;;;  ;;    ;;   ;;   ;;  ;;        ;;  ;;       ;;       
+;      ;;;;;     ;;;;     ;;   ;;   ;;  ;;        ;;  ;;;;;;;  ;;;;;;;; 
+;                                                                       
+;                                                                       
+;                                                                       
+;                                                                       
+;                                                                       
+
 (define (compile conf)
   (debug 'COMPILE "***** COMPILE *****")
   (define cmd (compile-cmd conf (hash-ref conf "main")))
@@ -152,6 +177,33 @@
 (define (replace-extension file orig new)
   (regexp-replace (format "~a$" orig) (extract-filename file) new))
 
+
+
+;                                                                   
+;                                                                   
+;                                                                   
+;                                                                   
+;                                                                   
+;                                                                   
+;                                                                   
+;                                                                   
+;   ;;;;;;;   ;;       ;;  ;;;    ;;  ;;     ;;  ;;;;;;;;  ;;;;;;;  
+;   ;;    ;;  ;;       ;;  ;;;    ;;  ;;    ;;   ;;        ;;    ;; 
+;   ;;     ;  ;;       ;;  ;;;;   ;;  ;;   ;;    ;;        ;;     ; 
+;   ;;     ;  ;;       ;;  ;; ;   ;;  ;;  ;;     ;;        ;;     ;;
+;   ;;    ;;  ;;       ;;  ;; ;;  ;;  ;; ;;      ;;        ;;    ;; 
+;   ;;;;;;;   ;;       ;;  ;;  ;  ;;  ;;;;;;     ;;;;;;;   ;;;;;;;  
+;   ;;        ;;       ;;  ;;  ;; ;;  ;;;  ;;    ;;        ;;   ;   
+;   ;;        ;;       ;;  ;;   ; ;;  ;;   ;;    ;;        ;;   ;;  
+;   ;;        ;;       ;;  ;;   ;;;;  ;;    ;;   ;;        ;;    ;  
+;   ;;        ;;       ;;  ;;    ;;;  ;;     ;;  ;;        ;;    ;; 
+;   ;;        ;;;;;;;  ;;  ;;    ;;;  ;;      ;; ;;;;;;;;  ;;     ;;
+;                                                                   
+;                                                                   
+;                                                                   
+;                                                                   
+;                                                                   
+
 (define (plinker-cmd conf)
   (define tbc (replace-extension (hash-ref conf "main") "occ" "tbc"))
   (define tce (replace-extension (hash-ref conf "main") "occ" "tce"))
@@ -170,6 +222,33 @@
      (make-hash `(("code" . ERR.BINHEX)))])
   )
 
+
+
+;                                                            
+;                                                            
+;                                                            
+;                                                            
+;                                                            
+;                                                            
+;                                                            
+;                                                            
+;   ;;;;;;;    ;;  ;;;    ;;  ;;     ;;  ;;;;;;;;  ;;     ;; 
+;   ;;    ;;   ;;  ;;;    ;;  ;;     ;;  ;;        ;;    ;;  
+;   ;;     ;   ;;  ;;;;   ;;  ;;     ;;  ;;         ;;  ;;   
+;   ;;     ;   ;;  ;; ;   ;;  ;;     ;;  ;;          ;; ;    
+;   ;;    ;;   ;;  ;; ;;  ;;  ;;     ;;  ;;           ;;;    
+;   ;;;;;;;    ;;  ;;  ;  ;;  ;;;;;;;;;  ;;;;;;;      ;;     
+;   ;;     ;   ;;  ;;  ;; ;;  ;;     ;;  ;;          ;;;;    
+;   ;;     ;;  ;;  ;;   ; ;;  ;;     ;;  ;;          ;  ;;   
+;   ;;     ;;  ;;  ;;   ;;;;  ;;     ;;  ;;         ;;   ;;  
+;   ;;    ;;   ;;  ;;    ;;;  ;;     ;;  ;;        ;;     ;  
+;   ;;;;;;;    ;;  ;;    ;;;  ;;     ;;  ;;;;;;;; ;;      ;;;
+;                                                            
+;                                                            
+;                                                            
+;                                                            
+;                                                            
+
 ;;FIXME : Magic Number (bytecode location)
 (define (binhex-cmd conf)
   (define tbc (replace-extension (hash-ref conf "main") "occ" "tbc"))
@@ -179,6 +258,32 @@
    `(,(format "0x~a" (hash-ref (hash-ref (hash-ref conf "client-config") "board") "start-address"))
      ,tbc
      ,hex)))
+
+
+;                                                                                             
+;                                                                                             
+;                                                                                             
+;                                                                                             
+;                                                                                             
+;                                                                                             
+;                                                                                             
+;                                                                                             
+;   ;;  ;;     ;;  ;;;;;;;;  ;;     ;;  ;;;      ;;;  ;;;;;;;;  ;;;;;;;      ;;;;;   ;;;;;;;; 
+;   ;;  ;;     ;;  ;;        ;;    ;;   ;;;      ;;;  ;;        ;;    ;;    ;;   ;   ;;       
+;   ;;  ;;     ;;  ;;         ;;  ;;    ;;;     ;;;;  ;;        ;;     ;   ;;        ;;       
+;   ;;  ;;     ;;  ;;          ;; ;     ;;;;    ; ;;  ;;        ;;     ;; ;;         ;;       
+;   ;;  ;;     ;;  ;;           ;;;     ;; ;    ; ;;  ;;        ;;    ;;  ;;         ;;       
+;   ;;  ;;;;;;;;;  ;;;;;;;      ;;      ;; ;;  ;; ;;  ;;;;;;;   ;;;;;;;   ;;         ;;;;;;;  
+;   ;;  ;;     ;;  ;;          ;;;;     ;;  ;  ;  ;;  ;;        ;;   ;    ;;   ;;;;  ;;       
+;   ;;  ;;     ;;  ;;          ;  ;;    ;;  ;  ;  ;;  ;;        ;;   ;;   ;;     ;;  ;;       
+;   ;;  ;;     ;;  ;;         ;;   ;;   ;;  ;;;   ;;  ;;        ;;    ;    ;;    ;;  ;;       
+;   ;;  ;;     ;;  ;;        ;;     ;   ;;   ;;   ;;  ;;        ;;    ;;    ;;   ;;  ;;       
+;   ;;  ;;     ;;  ;;;;;;;; ;;      ;;; ;;   ;;   ;;  ;;;;;;;;  ;;     ;;    ;;;;;   ;;;;;;;; 
+;                                                                                             
+;                                                                                             
+;                                                                                             
+;                                                                                             
+;                                                                                             
 
 (define (ihexmerge conf)
   (define result (ihexmerge-cmd conf))
@@ -192,14 +297,20 @@
                (conf-get "install")
                "firmwares"
                (hash-ref (hash-ref (hash-ref conf "client-config") "board") "firmware")))
+    
+    (debug 'IHEX "Firmware path: ~a" tvm)
+    
   (define hex 
     (replace-extension (hash-ref conf "main") "occ" "hex"))
  
+    (debug 'IHEX "Target hex to merge: ~a" hex)
+    
   (define cmd
     (system-call
      (conf-get "ihexmerge")
      `(,tvm
-       ,hex)))
+       ,hex
+       "> plumbware.hex")))
   
   (define result (make-hash))
   
@@ -207,14 +318,21 @@
                 (apply values (process cmd))])
     (let loop ([status (control 'status)])
         (case status
-          [(running) (sleep 1) (loop (control 'status))]
+          [(running) 
+           (debug 'IHEX "STATE: ~a" status)
+           (sleep 1) 
+           (loop (control 'status))]
           [(done-ok) 
-           (let ([hex (read-all stdout)])
+           (debug 'IHEX "STATE: ~a" status)
+           (let (#;[hex (read-all stdout)])
+             (debug 'IHEX "STATE: ~a" status)
              (close-input-port stdout)
              (close-input-port stderr)
              (close-output-port stdin)
              (control 'kill)
              ;; Build an ok response
+             (define hex (file->string "plumbware.hex"))
+             (debug 'IHEX "Read plumbware: ~a bytes" (string-length hex))
              (hash-set! result "hex" hex)
              (hash-set! result "code" OK.IHEXMERGE)
              
@@ -224,6 +342,7 @@
              )
            ]
           [(done-error)
+           (debug 'IHEX "STATE: ~a" status)
            (close-input-port stdout)
            (close-input-port stderr)
            (close-output-port stdin)

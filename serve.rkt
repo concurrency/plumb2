@@ -145,31 +145,37 @@
     (debug 'COMPILEDRIVER "State: ~a" STATE)
     (case STATE
       [(compile)
+       (debug 'COMPILE-DRIVER "STATE: ~a" STATE)
        (define res (cmds:compile conf))
        (if (equal? (hash-ref res "code") OK.COMPILE)
            (loop 'link res)
            (loop 'error res))]
       [(link)
+       (debug 'COMPILE-DRIVER "STATE: ~a" STATE)
        (define res (cmds:plink conf))
        (if (equal? (hash-ref res "code") OK.LINK)
            (loop 'binhex res)
            (loop 'error res))]
       [(binhex)
+       (debug 'COMPILE-DRIVER "STATE: ~a" STATE)
        (define res (cmds:binhex conf))
        (if (equal? (hash-ref res "code") OK.BINHEX)
            (loop 'ihexmerge res)
            (loop 'error res))]
       [(ihexmerge)
+       (debug 'COMPILE-DRIVER "STATE: ~a" STATE)
        (define res (cmds:ihexmerge conf))
        (if (equal? (hash-ref res "code") OK.IHEXMERGE)
            (loop 'done res)
            (loop 'error res))]
       [(done)
+       (debug 'COMPILE-DRIVER "STATE: ~a" STATE)
        (hash-set! conf "end" (current-milliseconds))
        (hash-set! conf "result" result)
        (hash-set! conf "hex" (hash-ref result "hex"))
        (set! resp (encode-response conf))]
       [(error)
+       (debug 'COMPILE-DRIVER "STATE: ~a" STATE)
        (set! resp (encode-response result))]))
   
   ;; Return the response
