@@ -89,9 +89,11 @@
 (define (read-response resp)
   ;;(debug 'RAW (format "~a" resp))
   (define decoded (b64-decode resp))
+  (debug 'READRESP "Decoded response.")
   ;;(debug 'DECODED (~s decoded))
   (define parsed (deserialize (read (open-input-bytes decoded))))
   ;;(debug 'READRESPONSE (~s parsed))
+  (debug 'READRESP "Parsed response.")
   parsed)
   
 (define (check)
@@ -132,7 +134,9 @@
   (define resp
     (let ()
       (define resp-port (post-request req "compile"))
+      (debug 'COMPILE "post-request returned.")
       (define r (read-all resp-port))
+      (debug 'COMPILE "read-all completed.")
       (close-input-port resp-port)
       (read-response r)))
   
