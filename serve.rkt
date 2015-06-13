@@ -38,8 +38,14 @@
          (prefix-in cmds: "cmds.rkt")
          )
 
+(define one-hour (* 60 60))
+(define one-day (* 24 one-hour))
+(define two-days (* 2 one-day))
+(define one-week (* 7 one-day))
+(define hold-temp-files-for two-days)
+
 (define (ping req)
-   ;; Encode it with an 'OK and send it back.
+  ;; Encode it with an 'OK and send it back.
   (encode-response #hash((pong . "Hello"))
                    ))
 
@@ -49,8 +55,22 @@
       (set! c (add1 c))
       c)))
 
+(define (cleanup-temp-directory)
+  
+  (define (too-old d)
+    (let ([s (file-or-directory-modify-seconds d)])
+      (> s hold-temp-files-for)))
+  
+  (for ([d (directory-list (conf-get 'temp-dir))])
+    (define full-path (build-path (conf-get 'temp-dir) d))
+    (when (directory-exists? full-path)
+      (when (too-old full-path)
+        ;(printf "Deleting: ~a~n" d)
+        (delete-directory/files full-path)
+        ))))
+
 (define (check-driver req)
-   (debug 'CHECKDRIVER "Start check-driver.")
+  (debug 'CHECKDRIVER "Start check-driver.")
   
   ;; Clean up the request
   (define b64 (request-post-data/raw req))
@@ -75,7 +95,10 @@
   ;; does a collection as needed, so this isn't strictly necessary.
   ;; 1000 sequential requests and no apparent file/memory leaks.
   (collect-garbage)
- 
+  
+  ;; Also clean up the temp directory.
+  (cleanup-temp-directory)
+  
   (hash-set! conf "RAM" (current-memory-use))
   (hash-set! conf "seq" (compile-counter))
   (hash-set! conf "start" (current-milliseconds))
@@ -130,7 +153,7 @@
   ;; does a collection as needed, so this isn't strictly necessary.
   ;; 1000 sequential requests and no apparent file/memory leaks.
   (collect-garbage)
- 
+  
   (hash-set! conf "RAM" (current-memory-use))
   (hash-set! conf "seq" (compile-counter))
   (hash-set! conf "start" (current-milliseconds))
