@@ -1,4 +1,5 @@
-server: 45.55.232.116
+# server: 45.55.232.116
+server: localhost
 port: 9000
 temp-dir: /tmp/plumb
 avrdude: "avrdude"

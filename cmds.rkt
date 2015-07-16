@@ -117,6 +117,8 @@
              (hash-set! result "details" details)
              (hash-set! result "code" ERR.COMPILE)
              
+             (debug 'COMPILE:ERR "msg: ~a~ndetails: ~a~n" err-msg details)
+             
              ;; Clean up the temporary space.
              (debug 'DELETE "Deleting ~a" session-dir)
              ;; (delete-directory/files (build-path (conf-get "temp-dir") session-dir))
