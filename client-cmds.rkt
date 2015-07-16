@@ -40,11 +40,21 @@
 
 (define (build-request-package)
   (define req (make-hash))
+  (define SF (conf-get 'source-file))
+  
+  (debug 'BRP "source-file: ~a~n" SF)
+  (debug 'BRP "filedir: ~a~n" (extract-filedir SF))
+
+  (printf "fd: ~a~n" (extract-filedir SF))
+  
+  ;(flush-output (current-output-port))
+  ;(flush-output (current-error-port))
+  ;(exit)
   
   ;; Grab all the sources from the temporary directory.
-  (for ([file (directory-list (extract-filedir (conf-get 'source-file)))])
+  (for ([file (directory-list (extract-filedir SF))])
     (set! file (build-path
-                (extract-filedir (conf-get 'source-file))
+                (extract-filedir SF)
                 file))
     ;; When they are occam files (.occ, .inc. .module), 
     ;; slurp them up into the request.

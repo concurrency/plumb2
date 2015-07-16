@@ -25,28 +25,53 @@
          "util.rkt"
          "config.rkt"
          "debug.rkt"
+         "model-plumb.rkt"
          (prefix-in ccmds: "client-cmds.rkt")
          (prefix-in cmds: "cmds.rkt"))
 
- (define (driver)
+
+;; Debugging
+(set-textual-debug)
+(enable-debug! 'ALL)
+
+(define (driver)
+  
+  ;; Debugging
+  (set-textual-debug)
+  (enable-debug! 'ALL)
+  
   (define resp (ccmds:compile))
-  (define outp (open-output-file "firmware.hex" #:exists 'replace))
+  (define outp (open-output-file (conf-get "firmware-name") #:exists 'replace))
   (fprintf outp (hash-ref resp "hex"))
   (close-output-port outp)
   (flush-ports)
   
-   ;; Last step:
-   ;; Config does not seem to be essential...
-   ;; But will be on Windows, Mac.
-   ;; avrdude -C /usr/share/arduino/hardware/tools/avrdude.conf \
-   ;;         -V -F -P /dev/ttyUSB0 -p m328p -b 57600 -c arduino -U flash:w:firmware.hex:i
- 
-  (cmds:avrdude resp)
-   )
-
+  ;; Last step:
+  ;; Config does not seem to be essential...
+  ;; But will be on Windows, Mac.
+  ;; avrdude -C /usr/share/arduino/hardware/tools/avrdude.conf \
+  ;;         -V -F -P /dev/ttyUSB0 -p m328p -b 57600 -c arduino -U flash:w:firmware.hex:i
   
+  (ccmds:avrdude resp)
+  )
+
+
 ;; Defaults
-(config-file "client.yaml")
+
+(define hardware (new plumb%))
+(load-additional-client-config)
+
+(config-file (build-path (conf-get 'CLIENT-CONFIG) "client.yaml"))
+(debug 'CONFIGLOAD "~s" (config-file))
+
+(load-config)
+
+(conf-add "boards" 
+          (string->yaml
+           (read-url (format "http://~a:~a/ide/boards.yaml" 
+                             (conf-get 'server)
+                             (conf-get 'port)))))
+
 
 (define cmd-line-params (make-hash))
 
@@ -68,8 +93,6 @@
       (set! result (hash-ref brd "params"))))
   result)
 
-(set-textual-debug)
-
 (define plumb
   (command-line
    #:program "plumb"
@@ -80,7 +103,7 @@
    [("--config") c
                  "Choose the client YAML config."
                  (config-file c)]
-
+   
    [("--board") board
                 ((format "~n\tChoose the board family for your Arduino.")
                  (apply string-append

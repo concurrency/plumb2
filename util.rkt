@@ -54,7 +54,10 @@
 
 (define (extract-filedir path)
   (define-values (base name dir?) (split-path path))
-  (->string base))
+  (debug 'EFD "base: ~a~n" base)
+  (if (equal? base 'relative)
+    (simplify-path "./")
+    (->string base)))
 
 
 (define (occam-file? filename)
