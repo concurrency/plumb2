@@ -26,6 +26,7 @@
          "config.rkt"
          "debug.rkt"
          "model-plumb.rkt"
+         "mqtt.rkt"
          (prefix-in ccmds: "client-cmds.rkt")
          (prefix-in cmds: "cmds.rkt"))
 
@@ -33,6 +34,9 @@
 ;; Debugging
 (set-textual-debug)
 (enable-debug! 'ALL)
+
+(define cmd-line-params (make-hash))
+
 
 (define (driver)
   
@@ -52,7 +56,32 @@
   ;; avrdude -C /usr/share/arduino/hardware/tools/avrdude.conf \
   ;;         -V -F -P /dev/ttyUSB0 -p m328p -b 57600 -c arduino -U flash:w:firmware.hex:i
   
-  (ccmds:avrdude resp)
+  (cond
+    ;; If it's local, let AVRDUDE have its way.
+    [(not (hash-ref cmd-line-params "mqtt" false))
+     (debug 'DRIVER "Using AVRDUDE.")
+     (ccmds:avrdude resp)]
+    ;; We are leaving this for a client to pick up later.
+    ;; Put it in a location and post to the channel.
+    [(and (hash-ref cmd-line-params "mqtt" false)
+          (hash-ref cmd-line-params "mqtt-host" false)
+          (hash-ref cmd-line-params "mqtt-port" false)
+          (hash-ref cmd-line-params "mqtt-channel" false)
+          (hash-ref cmd-line-params "leave-firmware-in" false))
+     (debug 'DRIVER "Using MQTT signaling.")
+     ;; Copy the file
+     (copy-file (conf-get "firmware-name") 
+                (build-path (hash-ref cmd-line-params "leave-firmware-in")
+                            "plumbware.hex")
+                true)
+     ;; Signal.
+     (define mqtt (new mqtt%
+                       [uri   (hash-ref cmd-line-params "mqtt-host")]
+                       [port  (string->number (hash-ref cmd-line-params "mqtt-port"))]))
+     (send mqtt publish
+           (hash-ref cmd-line-params "mqtt-channel")
+           "plumbware.hex")
+     (send mqtt stop)])
   )
 
 
@@ -72,8 +101,6 @@
                              (conf-get 'server)
                              (conf-get 'port)))))
 
-
-(define cmd-line-params (make-hash))
 
 (define board-string
   (let ([all '()])
@@ -118,6 +145,14 @@
                  "Arduino serial port."
                  (debug 'SERIAL "Setting serial port to: ~a~n" serial)
                  (hash-set! cmd-line-params "serial" serial)]
+   
+   [("--mqtt") leave-firmware-in host port channel
+               "Leave the firmware in the filesystem and signal to a MQTT server that we're done."
+               (hash-set! cmd-line-params "mqtt" true)
+               (hash-set! cmd-line-params "leave-firmware-in" leave-firmware-in)
+               (hash-set! cmd-line-params "mqtt-host" host)
+               (hash-set! cmd-line-params "mqtt-port" port)
+               (hash-set! cmd-line-params "mqtt-channel" channel)]
    
    ;; One file on the command line
    #:args (file)
