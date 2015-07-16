@@ -266,7 +266,7 @@
    #:args () ;; No command-line args
    (set-textual-debug)
    (load-config)
-   (conf-add 'docker docker?))
+   (conf-add 'docker docker?)
    (debug 'SERVER "Listening on port ~a" (conf-get 'port))
    (serve)
    ))
