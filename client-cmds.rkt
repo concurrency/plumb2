@@ -100,9 +100,9 @@
   ;;(debug 'RAW (format "~a" resp))
   (define decoded (b64-decode resp))
   (debug 'READRESP "Decoded response.")
-  ;;(debug 'DECODED (~s decoded))
+  (debug 'DECODED (~s decoded))
   (define parsed (deserialize (read (open-input-bytes decoded))))
-  ;;(debug 'READRESPONSE (~s parsed))
+  (debug 'READRESPONSE (~s parsed))
   (debug 'READRESP "Parsed response.")
   parsed)
   

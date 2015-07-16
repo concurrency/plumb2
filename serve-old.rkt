@@ -170,8 +170,6 @@
       [(compile)
        (debug 'COMPILE-DRIVER "STATE: ~a" STATE)
        (define res (cmds:compile conf))
-       (debug 'COMPILE-DRIVER "RES:~n")
-       (pretty-print res)
        (if (equal? (hash-ref res "code") OK.COMPILE)
            (loop 'link res)
            (loop 'error res))]
@@ -201,8 +199,6 @@
        (set! resp (encode-response conf))]
       [(error)
        (debug 'COMPILE-DRIVER "STATE: ~a" STATE)
-       (debug 'COMPILE-DRIVER "ERROR:~n")
-       (pretty-print resp)
        (set! resp (encode-response result))]))
   
   ;; Return the response
@@ -246,7 +242,6 @@
 
 ;; Defaults
 (config-file "server.yaml")
-(define docker? false)
 
 (define occsrv
   (command-line
@@ -259,14 +254,9 @@
    [("--config") c
                  "Choose the server YAML config."
                  (config-file c)]
-   [("--docker") path-to-binaries 
-                 "If running under Docker, set a binary path."
-                 (set! docker? path-to-binaries)]
-   
    #:args () ;; No command-line args
    (set-textual-debug)
    (load-config)
-   (conf-add 'docker docker?))
    (debug 'SERVER "Listening on port ~a" (conf-get 'port))
    (serve)
    ))

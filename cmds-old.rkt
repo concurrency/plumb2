@@ -46,7 +46,7 @@
 ;; spaces come out right.
 
 
-
+     
 
 ;                                                                       
 ;                                                                       
@@ -93,24 +93,17 @@
     
     (debug 'COMPILE "Current directory: ~a~n" (current-directory))
     (debug 'COMPILE "~n****~n~a~n****~n" cmd)
-    
+           
     (let-values ([(stdout stdin pid stderr control)
                   (apply values (process cmd))])
       (define result (make-hash))
       
       (let loop ([status (control 'status)])
         (case status
-          [(running) (sleep 1)
-                     (debug 'COMPILE "Running...") 
-                     (loop (control 'status))]
+          [(running) (sleep 1) (loop (control 'status))]
           [(done-ok) 
            ;; FIXME Some kind of response
            (hash-set! result "code" OK.COMPILE)
-           (close-input-port stdout)
-           (close-input-port stderr)
-           (close-output-port stdin)
-           
-           (debug 'COMPILE "DONE-OK~n")
            ]
           [(done-error)
            (let ([err-msg (read-all stdout)]
@@ -129,15 +122,12 @@
              ;; Clean up the temporary space.
              (debug 'DELETE "Deleting ~a" session-dir)
              ;; (delete-directory/files (build-path (conf-get "temp-dir") session-dir))
-             )]
-          [else
-           (debug 'COMPILE "LOOP ERR: ~a~n" (control 'status))]
-          ))
+             )]))
       
       (debug 'COMPILERESULT (~a result))
       result
       )))
-
+    
 ;; NEED TO PARAMETERIZE
 #|
  avr-occbuild --program fastblink.occ 
@@ -152,13 +142,7 @@
 (define (compile-cmd config main)
   (system-call
    (conf-get "occbuild")
-   `(--verbose
-     ,@(if (conf-get "docker")
-           `(--occ21 ,(format "~a/avr-occ21" (conf-get "docker"))
-                     --plinker.pl ,(format "~a/avr-plinker.pl" (conf-get "docker"))
-                     --tce-dump.pl ,(format "~a/avr-tce-dump.pl" (conf-get "docker")))
-           '())
-     --search ,(conf-get "include")
+   `(--search ,(conf-get "include")
      ,@(map (λ (lib)
               `(--search ,(build-path (conf-get "include") lib)))
             '("convert" "forall" "hostio" "hostsp" "maths" "streamio" "string")) 
@@ -176,9 +160,7 @@
                   (hash-ref config "platform" "arduino"))
      -D ,(format "F.CPU=~a" (hash-ref config 'mhz "16000000"))
      ;; --program needs to come last
-     --program
-     ;; ,(build-path (conf-get 'temp-dir) (hash-ref config "session-id") main))))
-     ,main)))
+     --program ,main)))
 
 (define (output-exists? session-dir names ext)
   (parameterize ([current-directory (build-path (conf-get 'temp-dir) session-dir)])
@@ -192,7 +174,7 @@
     [else 
      (make-hash `(("code" . ERR.LINK)))])
   )
-
+  
 
 (define (replace-extension file orig new)
   (regexp-replace (format "~a$" orig) (extract-filename file) new))
@@ -314,29 +296,29 @@
   (parameterize ([current-directory (build-path (conf-get "temp-dir") 
                                                 (hash-ref conf "session-id"))])
     (define tvm (build-path
-                 (conf-get "install")
-                 "firmwares"
-                 (hash-ref (hash-ref (hash-ref conf "client-config") "board") "firmware")))
+               (conf-get "install")
+               "firmwares"
+               (hash-ref (hash-ref (hash-ref conf "client-config") "board") "firmware")))
     
     (debug 'IHEX "Firmware path: ~a" tvm)
     
-    (define hex 
-      (replace-extension (hash-ref conf "main") "occ" "hex"))
-    
+  (define hex 
+    (replace-extension (hash-ref conf "main") "occ" "hex"))
+ 
     (debug 'IHEX "Target hex to merge: ~a" hex)
     
-    (define cmd
-      (system-call
-       (conf-get "ihexmerge")
-       `(,tvm
-         ,hex
-         "> plumbware.hex")))
-    
-    (define result (make-hash))
-    
-    (let-values ([(stdout stdin pid stderr control)
-                  (apply values (process cmd))])
-      (let loop ([status (control 'status)])
+  (define cmd
+    (system-call
+     (conf-get "ihexmerge")
+     `(,tvm
+       ,hex
+       "> plumbware.hex")))
+  
+  (define result (make-hash))
+  
+  (let-values ([(stdout stdin pid stderr control)
+                (apply values (process cmd))])
+    (let loop ([status (control 'status)])
         (case status
           [(running) 
            (debug 'IHEX "STATE: ~a" status)
@@ -370,11 +352,11 @@
            
            (hash-set! result "code" ERR.IHEXMERGE)
            ])))
-    result))
+  result))
 
 ;; avrdude -V -F -p atmega328p -c arduino -U flash:w:firmware.hex:i -b 57600 -P /dev/tty.usbserial-A901N6UH
 
 
 
 
-
+  
