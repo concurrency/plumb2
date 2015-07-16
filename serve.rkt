@@ -171,7 +171,7 @@
        (debug 'COMPILE-DRIVER "STATE: ~a" STATE)
        (define res (cmds:compile conf))
        (debug 'COMPILE-DRIVER "RES:~n")
-       (pretty-print res)
+       ;;(pretty-print res)
        (if (equal? (hash-ref res "code") OK.COMPILE)
            (loop 'link res)
            (loop 'error res))]
@@ -202,7 +202,7 @@
       [(error)
        (debug 'COMPILE-DRIVER "STATE: ~a" STATE)
        (debug 'COMPILE-DRIVER "ERROR:~n")
-       (pretty-print resp)
+       ;;(pretty-print resp)
        (set! resp (encode-response result))]))
   
   ;; Return the response
