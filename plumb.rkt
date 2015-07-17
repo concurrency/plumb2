@@ -31,18 +31,10 @@
          (prefix-in cmds: "cmds.rkt"))
 
 
-;; Debugging
-(set-textual-debug)
-(enable-debug! 'ALL)
-
 (define cmd-line-params (make-hash))
 
 
 (define (driver)
-  
-  ;; Debugging
-  (set-textual-debug)
-  (enable-debug! 'ALL)
   
   (define resp (ccmds:compile))
   (define outp (open-output-file (conf-get "firmware-name") #:exists 'replace))
@@ -56,8 +48,13 @@
   ;; avrdude -C /usr/share/arduino/hardware/tools/avrdude.conf \
   ;;         -V -F -P /dev/ttyUSB0 -p m328p -b 57600 -c arduino -U flash:w:firmware.hex:i
   
-  (debug 'DRIVER "Using AVRDUDE.")
-  (ccmds:avrdude resp))
+  (cond
+    [(not (conf-get "use-mqtt?"))
+     (debug 'DRIVER "Using AVRDUDE.")
+     (ccmds:avrdude resp)]
+    [(conf-get "use-mqtt?")
+     (debug 'DRIVER "Using MQTT.")
+     (ccmds:mqtt-notify resp)]))
 
 
 ;; Defaults
@@ -120,6 +117,24 @@
                  "Arduino serial port."
                  (debug 'SERIAL "Setting serial port to: ~a~n" serial)
                  (hash-set! cmd-line-params "serial" serial)]
+   
+   [("--mqtt-host") mqtt-host
+                    "Set the MQTT host for notifications."
+                    (hash-set! cmd-line-params "use-mqtt?" true)
+                    (hash-set! cmd-line-params "mqtt-host" mqtt-host)]
+   [("--mqtt-port") mqtt-port
+                    "Set the MQTT port."
+                    (hash-set! cmd-line-params "use-mqtt?" true)
+                    (hash-set! cmd-line-params "mqtt-port" mqtt-port)]
+   [("--mqtt-channel") mqtt-channel
+                       "Set the MQTT channel."
+                       (hash-set! cmd-line-params "use-mqtt?" true)
+                       (hash-set! cmd-line-params "mqtt-channel" mqtt-channel)]
+   
+   [("--mqtt-url") mqtt-url
+                   "The root URL for where files can be picked up."
+                   (hash-set! cmd-line-params "use-mqtt?" true)
+                   (hash-set! cmd-line-parmas "mqtt-url" mqtt-url)]
    
    ;; One file on the command line
    #:args (file)

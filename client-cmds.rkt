@@ -29,7 +29,8 @@
          "debug.rkt"
          "syscalls.rkt"
          "config.rkt"
-         "constants.rkt")
+         "constants.rkt"
+         "mqtt.rkt")
 
 (provide compile
          check
@@ -155,6 +156,25 @@
   ;;(debug 'SERVERRESPONSE (~s resp))
   resp
   )
+
+(define (mqtt-notify conf)
+  (define mqtt (new mqtt% 
+                    [uri (conf-get "mqtt-host")]
+                    [port (conf-get "mqtt-port")]
+                    [id "plumb"]))
+  ;; Copy the file
+  (copy-file (conf-get "firmware-name") 
+             (conf-get "mqtt-directory")
+             true)
+  
+  (send mqtt start)
+  (send mqtt pub
+        (conf-get "mqtt-channel")
+        (format "~a/~a"
+                (conf-get "mqtt-url")
+                (conf-get "firmware-name")))
+  (send mqtt stop))
+                
 
 (define (avrdude conf)
   

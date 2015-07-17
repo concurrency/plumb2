@@ -1,0 +1,7 @@
+server: localhost
+port: 9000
+temp-dir: /tmp/plumb
+avrdude: "avrdude"
+version: 20150608
+mqtt-directory: /compiled
+mqtt-url: "http://localhost:10101/"
