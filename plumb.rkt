@@ -26,7 +26,6 @@
          "config.rkt"
          "debug.rkt"
          "model-plumb.rkt"
-         "mqtt.rkt"
          (prefix-in ccmds: "client-cmds.rkt")
          (prefix-in cmds: "cmds.rkt"))
 
@@ -59,24 +58,10 @@
 
 ;; Defaults
 
-(define hardware (new plumb%))
-(load-additional-client-config)
-
-(config-file (build-path (conf-get 'CLIENT-CONFIG) "client.yaml"))
-(debug 'CONFIGLOAD "~s" (config-file))
-
-(load-config)
-
-(conf-add "boards" 
-          (string->yaml
-           (read-url (format "http://~a:~a/ide/boards.yaml" 
-                             (conf-get 'server)
-                             (conf-get 'port)))))
-
-
-(define board-string
+(define (make-board-string)
   (let ([all '()])
-    (define boards (file->yaml "boards.yaml"))
+    ;;(define boards (file->yaml "boards.yaml"))
+    (define boards (conf-get "boards"))
     (for ([b boards])
       (for ([n (hash-ref b "names")])
         (set! all (snoc all (format "~a (family: ~a)" n (hash-ref b "family"))))
@@ -84,7 +69,8 @@
     all))
 
 (define (get-board b)
-  (define boards (file->yaml "boards.yaml"))
+  ;;(define boards (file->yaml "boards.yaml"))
+  (define boards (conf-get "boards"))
   (define result false)
   (for ([brd boards])
     (debug 'GB "~a : ~a" b (hash-ref brd "family"))
@@ -92,25 +78,48 @@
       (set! result (hash-ref brd "params"))))
   result)
 
+
+(config-file false)
+(define (init)  
+  (define my-path (extract-filedir (find-system-path 'run-file)))
+  (unless (config-file)
+    (config-file (build-path my-path
+                             "client-config"
+                             "client.yaml")))
+  (load-additional-client-config)  
+  (load-config)
+  
+  (conf-add "boards" 
+            (string->yaml
+             (read-url (format "http://~a:~a/ide/boards.yaml" 
+                               (conf-get 'server)
+                               (conf-get 'port)))))  
+  )
+
+
+;; Load our configuration (client.yaml by default)
+(init)
+
 (define plumb
   (command-line
    #:program "plumb"
    #:once-each 
    [("-d" "--debug") "Turn on verbose debugging."
+                     (set-textual-debug)
                      (enable-debug! 'ALL)]
    
    [("--config") c
                  "Choose the client YAML config."
-                 (config-file c)]
+                 (config-file c)
+                 (init)]
    
    [("--board") board
                 ((format "~n\tChoose the board family for your Arduino.")
                  (apply string-append
-                        (map (λ (b) (format "\t* ~a~n" b)) board-string)))
+                        (map (λ (b) (format "\t* ~a~n" b)) (make-board-string))))
                 
-                (define board-params (get-board board))
-                (debug 'BOARDPARAMS (~s board-params))
-                (hash-set! cmd-line-params "board" board-params)
+                
+                (hash-set! cmd-line-params "board" board)
                 ]
    
    [("--serial") serial
@@ -125,7 +134,7 @@
    [("--mqtt-port") mqtt-port
                     "Set the MQTT port."
                     (hash-set! cmd-line-params "use-mqtt?" true)
-                    (hash-set! cmd-line-params "mqtt-port" mqtt-port)]
+                    (hash-set! cmd-line-params "mqtt-port" (string->number mqtt-port))]
    [("--mqtt-channel") mqtt-channel
                        "Set the MQTT channel."
                        (hash-set! cmd-line-params "use-mqtt?" true)
@@ -134,13 +143,16 @@
    [("--mqtt-url") mqtt-url
                    "The root URL for where files can be picked up."
                    (hash-set! cmd-line-params "use-mqtt?" true)
-                   (hash-set! cmd-line-parmas "mqtt-url" mqtt-url)]
+                   (hash-set! cmd-line-params "mqtt-url" mqtt-url)]
    
    ;; One file on the command line
    #:args (file)
    
-   ;; Load our configuration (client.yaml by default)
-   (load-config)
+   ;; Provide a default board.
+   (unless (hash-ref cmd-line-params "board" false)
+     (define board-params (get-board "arduino"))
+     (debug 'BOARDPARAMS (~s board-params))
+     (hash-set! cmd-line-params "board" board-params))
    
    ;; Merge the command-line params with the standing config.
    (for ([(k v) cmd-line-params])

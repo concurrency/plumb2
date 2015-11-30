@@ -34,7 +34,8 @@
 
 (provide compile
          check
-         avrdude)
+         avrdude
+         mqtt-notify)
 
 
 
@@ -46,7 +47,7 @@
   (debug 'BRP "source-file: ~a~n" SF)
   (debug 'BRP "filedir: ~a~n" (extract-filedir SF))
 
-  (printf "fd: ~a~n" (extract-filedir SF))
+  (debug 'BRP "fd: ~a~n" (extract-filedir SF))
   
   ;(flush-output (current-output-port))
   ;(flush-output (current-error-port))
@@ -101,9 +102,9 @@
   ;;(debug 'RAW (format "~a" resp))
   (define decoded (b64-decode resp))
   (debug 'READRESP "Decoded response.")
-  (debug 'DECODED (~s decoded))
+  ;;(debug 'DECODED (~s decoded))
   (define parsed (deserialize (read (open-input-bytes decoded))))
-  (debug 'READRESPONSE (~s parsed))
+  ;;(debug 'READRESPONSE (~s parsed))
   (debug 'READRESP "Parsed response.")
   parsed)
   
@@ -164,16 +165,18 @@
                     [id "plumb"]))
   ;; Copy the file
   (copy-file (conf-get "firmware-name") 
-             (conf-get "mqtt-directory")
+             (build-path (conf-get "mqtt-directory")
+                         (extract-filename (conf-get "firmware-name")))
              true)
   
   (send mqtt start)
   (send mqtt pub
         (conf-get "mqtt-channel")
-        (format "~a/~a"
+        (format "~a~a"
                 (conf-get "mqtt-url")
-                (conf-get "firmware-name")))
-  (send mqtt stop))
+                (extract-filename (conf-get "firmware-name"))))
+  (send mqtt stop)
+  )
                 
 
 (define (avrdude conf)
@@ -181,7 +184,9 @@
   ;; (debug 'AVRDUDE "~nBOARD:~n~a~n" conf)
   ;;(show-conf conf)
   
+  ;; WARNING: Defaulting to "arduino" for board.
   (define board (hash-ref (hash-ref conf "client-config") "board"))
+
   (define cmd
     (system-call
      (quote-path (conf-get "AVRDUDE"))

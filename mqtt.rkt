@@ -393,7 +393,12 @@
               (debug "PUB: READING ~a ~a~n" identifier-length content-length)
               (define incoming-channel-bytes 
                 (read-bytes identifier-length (connection-in conn)))
-              (define pub-content (read-bytes content-length (connection-in conn)))
+              ;; Drop the length bytes.
+              (define pub-content 
+                (list->bytes
+                 (drop (bytes->list
+                        (read-bytes content-length (connection-in conn)))
+                       2)))
               (debug "~a: ~a~n" incoming-channel-bytes pub-content)
               ;; Apply the handler to the published content
               ;; Handle wildcards

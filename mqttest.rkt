@@ -9,7 +9,10 @@
                   [port  8338]
                   [id "racket"]))
 
-(send mqtt start)
-(send mqtt pub
+(send mqtt sub 
       "plumbing"
-      (format "plumbware.hex - ~a" (random 1000)))
+      (λ (msg) (printf "MSG:~n~a~n" msg)))
+
+(send mqtt start)
+
+
